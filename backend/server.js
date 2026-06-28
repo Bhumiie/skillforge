@@ -3,6 +3,8 @@ import cors from "cors";
 import "./config/env.js";
 import connectDB from "./config/db.js";
 import routes from "./routes/index.js";
+import userRoutes from "./routes/userRoutes.js";
+import connectionRoutes from "./routes/connectionRoutes.js";
 
 const app = express();
 
@@ -16,6 +18,8 @@ app.use(cors());
 
 // Mount all routes
 app.use("/", routes);
+app.use("/api/users", userRoutes);
+app.use("/api/connections", connectionRoutes);
 
 const startServer = async () => {
   try {
