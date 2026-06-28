@@ -10,7 +10,7 @@ function Navbar() {
         <li>
             <Link
               to="/"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-blue-800 transition-colors"
             >
               Explore
             </Link>
@@ -18,16 +18,16 @@ function Navbar() {
           <li>
             <Link
               to="/projects"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-blue-800 transition-colors"
             >
               Projects
             </Link>
           </li>
-          <li className="cursor-pointer hover:text-blue-600">About</li>
+          <li className="cursor-pointer hover:text-blue-800 transition-colors">About</li>
           <li>
             <Link
               to="/login"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-blue-800 transition-colors"
             >
               Login
             </Link>

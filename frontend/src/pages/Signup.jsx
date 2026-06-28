@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../api/api";
 
 function Signup() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
   
     if (!name || !email || !password || !confirmPassword) {
@@ -19,14 +22,24 @@ function Signup() {
       alert("Passwords do not match.");
       return;
     }
-  
-    console.log({
-      name,
-      email,
-      password,
-    });
-  
-    alert("Account Created Successfully!");
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await api.post("/auth/signup", {
+        name,
+        email,
+        password,
+      });
+
+      alert(response.data.message || "Account Created Successfully!");
+      navigate("/login");
+    } catch (error) {
+      const backendMessage = error?.response?.data?.message;
+      alert(backendMessage || "Unable to create account. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -125,9 +138,10 @@ function Signup() {
         {/* Button */}
         <button
           type="submit"
+          disabled={isSubmitting}
           className="mt-8 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 py-3.5 text-white font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
         >
-          Create Account
+          {isSubmitting ? "Creating Account..." : "Create Account"}
         </button>
         </form>
 
@@ -147,7 +161,7 @@ function Signup() {
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-semibold text-blue-600 hover:text-indigo-600 transition-colors"
+            className="font-semibold text-blue-600 hover:text-blue-800 transition-colors"
           >
             Login
           </Link>

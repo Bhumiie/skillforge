@@ -26,7 +26,7 @@ function Hero() {
                 Get Started
               </button>
       
-              <button className="border border-blue-600 text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50">
+              <button className="border border-blue-600 text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50 hover:text-blue-800 hover:border-blue-800 transition-colors">
                 Explore
               </button>
             </div>
