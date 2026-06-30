@@ -1,6 +1,7 @@
 import express from "express";
 import {
   acceptConnectionRequest,
+  getConnections,
   getReceivedRequests,
   rejectConnectionRequest,
   sendConnectionRequest,
@@ -9,6 +10,7 @@ import protect from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+router.get("/", protect, getConnections);
 router.get("/received", protect, getReceivedRequests);
 router.put("/:id/accept", protect, acceptConnectionRequest);
 router.put("/:id/reject", protect, rejectConnectionRequest);

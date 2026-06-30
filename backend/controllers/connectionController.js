@@ -1,5 +1,31 @@
 import Connection from "../models/Connection.js";
 
+export const getConnections = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const connections = await Connection.find({
+      status: "accepted",
+      $or: [
+        { sender: userId },
+        { receiver: userId }
+      ]
+    })
+      .populate("sender", "name email profilePic college location")
+      .populate("receiver", "name email profilePic college location")
+      .sort({ updatedAt: -1 });
+
+    res.json({
+      success: true,
+      connections,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 export const getReceivedRequests = async (req, res) => {
   try {
     const requests = await Connection.find({

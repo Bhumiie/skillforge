@@ -5,6 +5,9 @@ import connectDB from "./config/db.js";
 import routes from "./routes/index.js";
 import userRoutes from "./routes/userRoutes.js";
 import connectionRoutes from "./routes/connectionRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js";
+import hackathonRoutes from "./routes/hackathonRoutes.js";
 
 const app = express();
 
@@ -20,13 +23,16 @@ app.use(cors());
 app.use("/", routes);
 app.use("/api/users", userRoutes);
 app.use("/api/connections", connectionRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/hackathons", hackathonRoutes);
 
 const startServer = async () => {
   try {
     await connectDB();
 
     app.listen(PORT, () => {
-      console.log(`SkillSwap server running on port ${PORT}`);
+      console.log(`SkillForge server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

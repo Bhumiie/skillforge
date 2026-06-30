@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 function Profile() {
+  const navigate = useNavigate();
+  const { logoutUser } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     college: "",
@@ -78,6 +82,11 @@ function Profile() {
     } catch (error) {
       alert("Failed to update profile");
     }
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate("/");
   };
 
   return (
@@ -198,7 +207,14 @@ function Profile() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-slate-300 px-5 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Logout
+            </button>
             <button
               type="submit"
               className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700"

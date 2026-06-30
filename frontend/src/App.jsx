@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 
+import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
@@ -8,13 +9,14 @@ import Profile from "./pages/Profile";
 import Projects from "./pages/Projects";
 import UserProfile from "./pages/UserProfile";
 import Requests from "./pages/Requests";
+import Connections from "./pages/Connections";
+import Chat from "./pages/Chat";
 
 function App() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
+      <Route path="/" element={<Home />} />
+      <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
@@ -36,6 +38,22 @@ function App() {
         element={
           <ProtectedRoute>
             <Requests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/connections"
+        element={
+          <ProtectedRoute>
+            <Connections />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat/:userId"
+        element={
+          <ProtectedRoute>
+            <Chat />
           </ProtectedRoute>
         }
       />

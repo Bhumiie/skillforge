@@ -32,7 +32,7 @@ function Login() {
 
       localStorage.setItem("token", response.data.token);
       alert(response.data.message || "Login successful!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       const backendMessage = error?.response?.data?.message;
       alert(backendMessage || "Login failed. Please try again.");
