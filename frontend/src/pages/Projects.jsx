@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 function Projects() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("All");
   const [technology, setTechnology] = useState("All");
@@ -157,7 +159,11 @@ function Projects() {
                     Members: <span className="font-semibold text-slate-900">{project.members.length}/{project.maxMembers}</span>
                   </p>
                   <div className="flex gap-3">
-                    <button className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/projects/${project._id}`)}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
                       View Details
                     </button>
                     <button

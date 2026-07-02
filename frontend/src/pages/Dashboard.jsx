@@ -345,7 +345,7 @@ function Dashboard() {
                       <span>{project.members.length}/{project.maxMembers} members</span>
                       <button
                         type="button"
-                        onClick={() => navigate("/projects")}
+                        onClick={() => navigate(`/projects/${project._id}`)}
                         className="text-sm font-semibold text-blue-600 transition hover:text-blue-800"
                       >
                         View →

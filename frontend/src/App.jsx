@@ -11,6 +11,7 @@ import UserProfile from "./pages/UserProfile";
 import Requests from "./pages/Requests";
 import Connections from "./pages/Connections";
 import Chat from "./pages/Chat";
+import ProjectDetails from "./pages/ProjectDetails";
 
 function App() {
   return (
@@ -69,6 +70,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Projects />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ProtectedRoute>
+            <ProjectDetails />
           </ProtectedRoute>
         }
       />
