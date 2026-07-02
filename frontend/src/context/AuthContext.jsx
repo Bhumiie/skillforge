@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
         setLoading(true);
         setError(null);
         const profileData = await getProfile();
-        setUser(profileData);
+        // Extract the user sub-object if wrapped in success envelope
+        const userData = profileData?.user || profileData;
+        setUser(userData);
         setToken(storedToken);
         setIsAuthenticated(true);
       } catch (initError) {
@@ -39,7 +41,7 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, []);
 
-  const loginUser = async (credentials) => {
+  const login = async (credentials) => {
     try {
       setLoading(true);
       setError(null);
@@ -48,8 +50,13 @@ export function AuthProvider({ children }) {
         throw new Error("Login response did not include a token.");
       }
 
+      // Store token locally and state variables
+      localStorage.setItem("token", data.token);
+
       const profileData = await getProfile();
-      setUser(profileData);
+      const userData = profileData?.user || profileData;
+
+      setUser(userData);
       setToken(data.token);
       setIsAuthenticated(true);
       return data;
@@ -62,7 +69,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signupUser = async (userData) => {
+  const signup = async (userData) => {
     try {
       setLoading(true);
       setError(null);
@@ -77,7 +84,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logoutUser = () => {
+  const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
     setToken(null);
@@ -93,9 +100,9 @@ export function AuthProvider({ children }) {
         loading,
         isAuthenticated,
         error,
-        loginUser,
-        signupUser,
-        logoutUser,
+        login,
+        signup,
+        logout,
       }}
     >
       {children}

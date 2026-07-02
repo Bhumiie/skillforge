@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("students");
   const [search, setSearch] = useState("");
@@ -25,15 +27,8 @@ function Dashboard() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const token = localStorage.getItem("token");
-
       try {
-        const response = await axios.get("http://localhost:5000/api/users", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get("/users");
         setUsers(response.data.users || []);
       } catch (error) {
         console.error("Failed to load users", error);
@@ -48,15 +43,9 @@ function Dashboard() {
       if (activeTab !== "projects") return;
 
       setProjectsLoading(true);
-      const token = localStorage.getItem("token");
 
       try {
-        const response = await axios.get("http://localhost:5000/api/projects", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get("/projects");
         setProjects(response.data.projects || []);
       } catch (error) {
         console.error("Failed to load projects", error);
@@ -75,10 +64,7 @@ function Dashboard() {
       setHackathonsLoading(true);
 
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/hackathons"
-        );
-
+        const response = await api.get("/hackathons");
         setHackathons(response.data || []);
       } catch (error) {
         console.error("Failed to load hackathons", error);
@@ -94,8 +80,6 @@ function Dashboard() {
     e.preventDefault();
     setCreatingProject(true);
 
-    const token = localStorage.getItem("token");
-
     try {
       const payload = {
         title: createFormData.title,
@@ -105,11 +89,7 @@ function Dashboard() {
         maxMembers: parseInt(createFormData.maxMembers),
       };
 
-      await axios.post("http://localhost:5000/api/projects", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.post("/projects", payload);
 
       setShowCreateModal(false);
       setCreateFormData({
@@ -120,11 +100,7 @@ function Dashboard() {
         maxMembers: 3,
       });
 
-      const response = await axios.get("http://localhost:5000/api/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/projects");
       setProjects(response.data.projects || []);
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to create project");
@@ -134,7 +110,7 @@ function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/login");
   };
 
@@ -149,16 +125,9 @@ function Dashboard() {
     }));
 
     try {
-      const token = localStorage.getItem("token");
-
-      await axios.post(
-        "http://localhost:5000/api/connections/request",
-        { receiverId: userId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await api.post(
+        "/connections/request",
+        { receiverId: userId }
       );
 
       setConnectionState((prev) => ({
@@ -200,7 +169,7 @@ function Dashboard() {
       <TopNavbar />
       <div className="mx-auto max-w-[1400px]">
         <div className="mb-4 px-4 sm:px-0">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, Bhumika.</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name || "Bhumika"}.</h1>
           <p className="mt-1 text-sm text-gray-600">Build • Learn • Collaborate</p>
         </div>
 

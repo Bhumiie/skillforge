@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,17 +26,15 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post("/auth/login", {
+      const data = await login({
         email,
         password,
       });
 
-      localStorage.setItem("token", response.data.token);
-      alert(response.data.message || "Login successful!");
+      alert(data.message || "Login successful!");
       navigate("/dashboard");
     } catch (error) {
-      const backendMessage = error?.response?.data?.message;
-      alert(backendMessage || "Login failed. Please try again.");
+      alert(error.message || "Login failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

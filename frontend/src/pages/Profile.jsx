@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 
 function Profile() {
   const navigate = useNavigate();
-  const { logoutUser } = useAuth();
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     college: "",
@@ -20,15 +20,8 @@ function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-
       try {
-        const response = await axios.get("http://localhost:5000/api/users/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get("/users/profile");
         const user = response.data.user;
 
         setFormData({
@@ -58,8 +51,6 @@ function Profile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const token = localStorage.getItem("token");
-
     const payload = {
       name: formData.name,
       profilePic: formData.profilePic,
@@ -73,11 +64,7 @@ function Profile() {
     };
 
     try {
-      await axios.put("http://localhost:5000/api/users/profile", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.put("/users/profile", payload);
       alert("Profile updated successfully!");
     } catch (error) {
       alert("Failed to update profile");
@@ -85,7 +72,7 @@ function Profile() {
   };
 
   const handleLogout = () => {
-    logoutUser();
+    logout();
     navigate("/");
   };
 

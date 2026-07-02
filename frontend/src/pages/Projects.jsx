@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api/api";
 
 function Projects() {
   const [search, setSearch] = useState("");
@@ -13,13 +13,8 @@ function Projects() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const token = localStorage.getItem("token");
       try {
-        const response = await axios.get("http://localhost:5000/api/projects", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get("/projects");
         setProjects(response.data.projects || []);
       } catch (err) {
         setError("Failed to load projects");
@@ -51,27 +46,14 @@ function Projects() {
     if (joiningId) return;
 
     setJoiningId(projectId);
-    const token = localStorage.getItem("token");
 
     try {
-      await axios.post(
-        `http://localhost:5000/api/projects/${projectId}/join`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.post(`/projects/${projectId}/join`, {});
 
       setJoinMessage("Successfully joined the project!");
       setTimeout(() => setJoinMessage(""), 3000);
 
-      const response = await axios.get("http://localhost:5000/api/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/projects");
       setProjects(response.data.projects || []);
     } catch (err) {
       const message = err?.response?.data?.message || "Failed to join project";

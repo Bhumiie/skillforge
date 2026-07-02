@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 
 function UserProfile() {
   const { id } = useParams();
@@ -12,15 +12,8 @@ function UserProfile() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get(`/users/${id}`);
         setUser(response.data.user || null);
       } catch (error) {
         console.error("Failed to load user profile", error);
@@ -38,16 +31,9 @@ function UserProfile() {
     setIsConnecting(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      await axios.post(
-        "http://localhost:5000/api/connections/request",
-        { receiverId: user._id },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await api.post(
+        "/connections/request",
+        { receiverId: user._id }
       );
 
       setRequestSent(true);

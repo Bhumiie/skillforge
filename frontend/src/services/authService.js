@@ -1,10 +1,8 @@
-import api from "../api/axios";
-
-const TOKEN_KEY = "token";
+import api from "../api/api";
 
 export const signup = async (userData) => {
   try {
-    const response = await api.post("/api/auth/signup", userData);
+    const response = await api.post("/auth/signup", userData);
     return response.data;
   } catch (error) {
     const message = error?.response?.data?.message || error.message || "Signup failed";
@@ -14,14 +12,8 @@ export const signup = async (userData) => {
 
 export const login = async (userData) => {
   try {
-    const response = await api.post("/api/auth/login", userData);
-    const data = response.data;
-
-    if (data?.token) {
-      localStorage.setItem(TOKEN_KEY, data.token);
-    }
-
-    return data;
+    const response = await api.post("/auth/login", userData);
+    return response.data;
   } catch (error) {
     const message = error?.response?.data?.message || error.message || "Login failed";
     throw new Error(message);
@@ -29,12 +21,12 @@ export const login = async (userData) => {
 };
 
 export const logout = () => {
-  localStorage.removeItem(TOKEN_KEY);
+  // Pure service layer logout is a placeholder since token removal is handled in AuthContext
 };
 
 export const getProfile = async () => {
   try {
-    const response = await api.get("/api/users/profile");
+    const response = await api.get("/users/profile");
     return response.data;
   } catch (error) {
     const message = error?.response?.data?.message || error.message || "Failed to fetch profile";

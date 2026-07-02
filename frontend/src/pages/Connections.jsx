@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import api from "../api/api";
 
 function Connections() {
   const navigate = useNavigate();
@@ -14,28 +15,9 @@ function Connections() {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Authentication token not found.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch("http://localhost:5000/api/connections", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const payload = await response.json();
-          throw new Error(payload.message || "Failed to load connections");
-        }
-
-        const data = await response.json();
-        setConnections(data.connections || []);
+        const response = await api.get("/connections");
+        setConnections(response.data.connections || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to fetch connections");
       } finally {

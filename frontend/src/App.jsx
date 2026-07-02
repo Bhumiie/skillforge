@@ -24,7 +24,14 @@ function App() {
       />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/users/:id"
         element={
@@ -57,7 +64,14 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/projects" element={<Projects />} />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <Projects />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

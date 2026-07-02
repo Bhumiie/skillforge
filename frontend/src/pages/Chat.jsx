@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import api from "../api/api";
 
 function Chat() {
   const navigate = useNavigate();
@@ -17,28 +18,9 @@ function Chat() {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Authentication token not found.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch(`http://localhost:5000/api/messages/${userId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const payload = await response.json();
-          throw new Error(payload.message || "Failed to load conversation");
-        }
-
-        const data = await response.json();
-        setMessages(data.messages || []);
+        const response = await api.get(`/messages/${userId}`);
+        setMessages(response.data.messages || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load conversation");
       } finally {
@@ -57,25 +39,13 @@ function Chat() {
     setSending(true);
     setError("");
 
-    const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch("http://localhost:5000/api/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ receiverId: userId, text: trimmedText }),
+      const response = await api.post("/messages", {
+        receiverId: userId,
+        text: trimmedText,
       });
 
-      if (!response.ok) {
-        const payload = await response.json();
-        throw new Error(payload.message || "Failed to send message");
-      }
-
-      const data = await response.json();
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => [...prev, response.data.message]);
       setText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send message");

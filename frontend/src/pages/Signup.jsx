@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,17 +27,16 @@ function Signup() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post("/auth/signup", {
+      const data = await signup({
         name,
         email,
         password,
       });
 
-      alert(response.data.message || "Account Created Successfully!");
+      alert(data.message || "Account Created Successfully!");
       navigate("/login");
     } catch (error) {
-      const backendMessage = error?.response?.data?.message;
-      alert(backendMessage || "Unable to create account. Please try again later.");
+      alert(error.message || "Unable to create account. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 
 function Requests() {
   const navigate = useNavigate();
@@ -10,15 +10,8 @@ function Requests() {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      const token = localStorage.getItem("token");
-
       try {
-        const response = await axios.get("http://localhost:5000/api/connections/received", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get("/connections/received");
         setRequests(response.data.requests || []);
       } catch (error) {
         console.error("Failed to load requests", error);
@@ -40,16 +33,9 @@ function Requests() {
     }));
 
     try {
-      const token = localStorage.getItem("token");
-
-      await axios.put(
-        `http://localhost:5000/api/connections/${requestId}/${action}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await api.put(
+        `/connections/${requestId}/${action}`,
+        {}
       );
 
       setRequests((prev) => prev.filter((request) => request._id !== requestId));
