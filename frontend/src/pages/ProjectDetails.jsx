@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 function ProjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -20,7 +22,7 @@ function ProjectDetails() {
     status: "Open",
   });
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const response = await api.get(`/projects/${id}`);
       const data = response.data.project;
@@ -38,11 +40,12 @@ function ProjectDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProject();
-  }, [id]);
+  }, [id, fetchProject]);
 
   const handleJoin = async () => {
     if (actionLoading) return;
@@ -50,10 +53,10 @@ function ProjectDetails() {
 
     try {
       await api.post(`/projects/${id}/join`, {});
-      alert("Successfully joined the project!");
+      addToast("Successfully joined the project!", "success");
       await fetchProject();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to join project");
+      addToast(error?.response?.data?.message || "Failed to join project", "error");
     } finally {
       setActionLoading(false);
     }
@@ -66,10 +69,10 @@ function ProjectDetails() {
 
     try {
       await api.post(`/projects/${id}/leave`, {});
-      alert("Successfully left the project!");
+      addToast("Successfully left the project!", "success");
       await fetchProject();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to leave project");
+      addToast(error?.response?.data?.message || "Failed to leave project", "error");
     } finally {
       setActionLoading(false);
     }
@@ -81,10 +84,10 @@ function ProjectDetails() {
 
     try {
       await api.delete(`/projects/${id}`);
-      alert("Project deleted successfully!");
+      addToast("Project deleted successfully!", "success");
       navigate("/dashboard");
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to delete project");
+      addToast(error?.response?.data?.message || "Failed to delete project", "error");
     } finally {
       setActionLoading(false);
     }
@@ -105,11 +108,11 @@ function ProjectDetails() {
 
     try {
       await api.put(`/projects/${id}`, payload);
-      alert("Project updated successfully!");
+      addToast("Project updated successfully!", "success");
       setShowEditModal(false);
       await fetchProject();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to update project");
+      addToast(error?.response?.data?.message || "Failed to update project", "error");
     } finally {
       setActionLoading(false);
     }
@@ -117,9 +120,18 @@ function ProjectDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-5xl items-center justify-center rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <p className="text-lg font-medium text-slate-600">Loading project details...</p>
+      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8 animate-pulse">
+        <div className="mx-auto max-w-5xl rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+          <div className="space-y-4">
+            <div className="h-8 w-1/3 rounded bg-slate-200" />
+            <div className="h-4 w-full rounded bg-slate-200" />
+            <div className="h-4 w-5/6 rounded bg-slate-200" />
+            <div className="h-4 w-1/2 rounded bg-slate-200" />
+          </div>
+          <div className="mt-8 flex gap-3">
+            <div className="h-10 w-28 rounded-full bg-slate-200" />
+            <div className="h-10 w-28 rounded-full bg-slate-200" />
+          </div>
         </div>
       </div>
     );

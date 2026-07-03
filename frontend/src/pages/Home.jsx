@@ -1,4 +1,4 @@
-import Navbar from "../components/Navbar/Navbar";
+import TopNavbar from "../components/TopNavbar/TopNavbar";
 import Hero from "../components/Hero/Hero";
 import Features from "../components/Features/Features";
 import Footer from "../components/Footer/Footer";
@@ -6,7 +6,7 @@ import Footer from "../components/Footer/Footer";
 function Home() {
   return (
     <>
-      <Navbar />
+      <TopNavbar />
       <Hero />
       <Features />
       <Footer />

@@ -2,11 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function Profile() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { addToast } = useToast();
   
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ function Profile() {
     // Validation
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      alert("File size exceeds 5MB limit.");
+      addToast("File size exceeds 5MB limit.", "error");
       return;
     }
 
@@ -101,10 +103,10 @@ function Profile() {
       });
       if (response.data.success) {
         setEditForm((prev) => ({ ...prev, [type]: response.data.fileUrl }));
-        alert(`${type === "profilePic" ? "Profile picture" : "Resume"} uploaded successfully! Click save to apply changes.`);
+        addToast(`${type === "profilePic" ? "Profile picture" : "Resume"} uploaded successfully! Click save to apply changes.`, "success");
       }
     } catch {
-      alert("File upload failed. Please try again.");
+      addToast("File upload failed. Please try again.", "error");
     } finally {
       setUploadingPic(false);
       setUploadingResume(false);
@@ -116,21 +118,21 @@ function Profile() {
 
     // Validation checks
     if (!editForm.name.trim()) {
-      alert("Name is required.");
+      addToast("Name is required.", "error");
       return;
     }
 
     const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
     if (editForm.github && !urlPattern.test(editForm.github)) {
-      alert("Please provide a valid GitHub URL.");
+      addToast("Please provide a valid GitHub URL.", "error");
       return;
     }
     if (editForm.linkedin && !urlPattern.test(editForm.linkedin)) {
-      alert("Please provide a valid LinkedIn URL.");
+      addToast("Please provide a valid LinkedIn URL.", "error");
       return;
     }
     if (editForm.portfolio && !urlPattern.test(editForm.portfolio)) {
-      alert("Please provide a valid Portfolio URL.");
+      addToast("Please provide a valid Portfolio URL.", "error");
       return;
     }
 
@@ -144,12 +146,12 @@ function Profile() {
     try {
       const response = await api.put("/users/profile", payload);
       if (response.data.success) {
-        alert("Profile updated successfully!");
+        addToast("Profile updated successfully!", "success");
         setShowEditModal(false);
         fetchProfileDetails();
       }
     } catch {
-      alert("Failed to update profile.");
+      addToast("Failed to update profile.", "error");
     } finally {
       setSaving(false);
     }
@@ -162,11 +164,23 @@ function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-8">
+      <div className="min-h-screen bg-[#eef4ff] pb-12 animate-pulse">
         <TopNavbar />
-        <div className="mx-auto mt-10 max-w-7xl px-4 text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-slate-600">Loading developer profile...</p>
+        <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+          <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center">
+              <div className="h-28 w-28 rounded-full bg-slate-200" />
+              <div className="flex-1 space-y-3">
+                <div className="h-8 w-1/3 rounded bg-slate-200" />
+                <div className="h-4 w-1/2 rounded bg-slate-200" />
+                <div className="h-4 w-1/4 rounded bg-slate-200" />
+              </div>
+            </div>
+            <div className="mt-8 space-y-4">
+              <div className="h-4 w-full rounded bg-slate-200" />
+              <div className="h-4 w-5/6 rounded bg-slate-200" />
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import { useToast } from "../context/ToastContext";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function Notifications() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,9 +40,10 @@ function Notifications() {
         setNotifications((prev) =>
           prev.map((notif) => (notif._id === id ? { ...notif, isRead: true } : notif))
         );
+        addToast("Notification marked as read", "success");
       }
     } catch {
-      alert("Failed to mark notification as read.");
+      addToast("Failed to mark notification as read.", "error");
     }
   };
 
@@ -47,9 +52,10 @@ function Notifications() {
       const response = await api.put("/notifications/read-all");
       if (response.data.success) {
         setNotifications((prev) => prev.map((notif) => ({ ...notif, isRead: true })));
+        addToast("All notifications marked as read", "success");
       }
     } catch {
-      alert("Failed to mark all as read.");
+      addToast("Failed to mark all as read.", "error");
     }
   };
 
@@ -58,9 +64,10 @@ function Notifications() {
       const response = await api.delete(`/notifications/${id}`);
       if (response.data.success) {
         setNotifications((prev) => prev.filter((notif) => notif._id !== id));
+        addToast("Notification deleted", "success");
       }
     } catch {
-      alert("Failed to delete notification.");
+      addToast("Failed to delete notification.", "error");
     }
   };
 
@@ -69,7 +76,7 @@ function Notifications() {
     const date = new Date(dateStr);
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
-    const diffHrs = Math.floor(diffMins / 600);
+    const diffHrs = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHrs / 24);
 
     if (diffMins < 1) return "Just now";
@@ -114,7 +121,7 @@ function Notifications() {
             <button
               type="button"
               onClick={markAllRead}
-              className="rounded-full bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+              className="rounded-full bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
             >
               Mark all as read
             </button>
@@ -123,9 +130,16 @@ function Notifications() {
 
         {/* Content list */}
         {loading ? (
-          <div className="rounded-[32px] bg-white p-12 text-center shadow-sm border border-slate-100">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-            <p className="mt-4 text-sm font-medium text-slate-500">Loading notifications...</p>
+          <div className="space-y-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-4 p-5 rounded-[28px] border border-slate-200 bg-white shadow-sm">
+                <div className="h-12 w-12 rounded-2xl bg-slate-200 shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 w-1/3 rounded bg-slate-200" />
+                  <div className="h-4 w-5/6 rounded bg-slate-200" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="rounded-[32px] bg-red-50 p-8 text-center shadow-sm border border-red-200">
@@ -134,7 +148,7 @@ function Notifications() {
             <button
               type="button"
               onClick={fetchNotifications}
-              className="mt-4 rounded-full bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700 transition"
+              className="mt-4 rounded-full bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700 transition cursor-pointer"
             >
               Retry
             </button>
@@ -144,8 +158,15 @@ function Notifications() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-2xl mx-auto mb-4">
               🔔
             </div>
-            <h2 className="text-lg font-extrabold text-slate-800">All caught up!</h2>
-            <p className="text-xs text-slate-500 mt-2">No new notifications. We'll let you know when things happen.</p>
+            <h2 className="text-xl font-extrabold text-slate-800">All caught up!</h2>
+            <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto">No new notifications. We'll let you know when things happen.</p>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition cursor-pointer"
+            >
+              Explore Dashboard
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -186,7 +207,7 @@ function Notifications() {
                       <button
                         type="button"
                         onClick={() => markRead(notif._id)}
-                        className="rounded-full border border-blue-200 bg-white px-3.5 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition"
+                        className="rounded-full border border-blue-200 bg-white px-3.5 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition cursor-pointer"
                       >
                         Read
                       </button>
@@ -194,7 +215,7 @@ function Notifications() {
                     <button
                       type="button"
                       onClick={() => deleteNotif(notif._id)}
-                      className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500 hover:border-red-200 hover:text-red-600 transition"
+                      className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500 hover:border-red-200 hover:text-red-600 transition cursor-pointer"
                     >
                       Delete
                     </button>

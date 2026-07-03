@@ -2,11 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 function HackathonDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [hackathon, setHackathon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -67,10 +69,10 @@ function HackathonDetails() {
 
     try {
       await api.post(`/hackathons/${id}/join`, {});
-      alert("Successfully joined the hackathon!");
+      addToast("Successfully joined the hackathon!", "success");
       await fetchHackathon();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to join hackathon");
+      addToast(error?.response?.data?.message || "Failed to join hackathon", "error");
     } finally {
       setActionLoading(false);
     }
@@ -83,10 +85,10 @@ function HackathonDetails() {
 
     try {
       await api.post(`/hackathons/${id}/leave`, {});
-      alert("Successfully left the hackathon!");
+      addToast("Successfully left the hackathon!", "success");
       await fetchHackathon();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to leave hackathon");
+      addToast(error?.response?.data?.message || "Failed to leave hackathon", "error");
     } finally {
       setActionLoading(false);
     }
@@ -98,10 +100,10 @@ function HackathonDetails() {
 
     try {
       await api.delete(`/hackathons/${id}`);
-      alert("Hackathon deleted successfully!");
+      addToast("Hackathon deleted successfully!", "success");
       navigate("/dashboard");
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to delete hackathon");
+      addToast(error?.response?.data?.message || "Failed to delete hackathon", "error");
     } finally {
       setActionLoading(false);
     }
@@ -130,11 +132,11 @@ function HackathonDetails() {
 
     try {
       await api.put(`/hackathons/${id}`, payload);
-      alert("Hackathon updated successfully!");
+      addToast("Hackathon updated successfully!", "success");
       setShowEditModal(false);
       await fetchHackathon();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to update hackathon");
+      addToast(error?.response?.data?.message || "Failed to update hackathon", "error");
     } finally {
       setActionLoading(false);
     }
@@ -151,9 +153,18 @@ function HackathonDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-5xl items-center justify-center rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <p className="text-lg font-medium text-slate-600">Loading hackathon details...</p>
+      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8 animate-pulse">
+        <div className="mx-auto max-w-5xl rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+          <div className="space-y-4">
+            <div className="h-8 w-1/3 rounded bg-slate-200" />
+            <div className="h-4 w-full rounded bg-slate-200" />
+            <div className="h-4 w-5/6 rounded bg-slate-200" />
+            <div className="h-4 w-1/2 rounded bg-slate-200" />
+          </div>
+          <div className="mt-8 flex gap-3">
+            <div className="h-10 w-28 rounded-full bg-slate-200" />
+            <div className="h-10 w-28 rounded-full bg-slate-200" />
+          </div>
         </div>
       </div>
     );

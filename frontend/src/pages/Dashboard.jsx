@@ -2,11 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
+  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Tab from URL
@@ -33,6 +35,7 @@ function Dashboard() {
   const hackathonSortBy = searchParams.get("sortBy") || "newest";
 
   const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [connectionState, setConnectionState] = useState({});
   const [projects, setProjects] = useState([]);
@@ -76,16 +79,20 @@ function Dashboard() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      setUsersLoading(true);
       try {
         const response = await api.get("/users");
         setUsers(response.data.users || []);
       } catch (error) {
         console.error("Failed to load users", error);
+        addToast("Failed to fetch developers directory", "error");
+      } finally {
+        setUsersLoading(false);
       }
     };
 
     fetchUsers();
-  }, []);
+  }, [addToast]);
 
   // Sync inputs with URL search param changes
   useEffect(() => {
@@ -166,10 +173,11 @@ function Dashboard() {
       setProjects(response.data.projects || []);
     } catch (error) {
       console.error("Failed to load projects", error);
+      addToast("Failed to fetch project list", "error");
     } finally {
       setProjectsLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, addToast]);
 
   useEffect(() => {
     if (activeTab !== "projects") return;
@@ -201,10 +209,11 @@ function Dashboard() {
       setHackathons(response.data || []);
     } catch (error) {
       console.error("Failed to load hackathons", error);
+      addToast("Failed to fetch hackathons list", "error");
     } finally {
       setHackathonsLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, addToast]);
 
   useEffect(() => {
     if (activeTab !== "hackathons") return;
@@ -226,6 +235,7 @@ function Dashboard() {
       };
 
       await api.post("/projects", payload);
+      addToast("Project created successfully!", "success");
 
       setShowCreateModal(false);
       setCreateFormData({
@@ -238,7 +248,7 @@ function Dashboard() {
 
       fetchProjects();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to create project");
+      addToast(error?.response?.data?.message || "Failed to create project", "error");
     } finally {
       setCreatingProject(false);
     }
@@ -266,6 +276,7 @@ function Dashboard() {
       };
 
       await api.post("/hackathons", payload);
+      addToast("Hackathon created successfully!", "success");
 
       setShowCreateHackathonModal(false);
       setCreateHackathonFormData({
@@ -286,7 +297,7 @@ function Dashboard() {
 
       fetchHackathons();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to create hackathon");
+      addToast(error?.response?.data?.message || "Failed to create hackathon", "error");
     } finally {
       setCreatingHackathon(false);
     }
@@ -295,10 +306,10 @@ function Dashboard() {
   const handleJoinHackathon = async (hackathonId) => {
     try {
       await api.post(`/hackathons/${hackathonId}/join`, {});
-      alert("Successfully joined the hackathon!");
+      addToast("Successfully joined the hackathon!", "success");
       fetchHackathons();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to join hackathon");
+      addToast(error?.response?.data?.message || "Failed to join hackathon", "error");
     }
   };
 
@@ -306,17 +317,11 @@ function Dashboard() {
     if (!window.confirm("Are you sure you want to leave this hackathon?")) return;
     try {
       await api.post(`/hackathons/${hackathonId}/leave`, {});
-      alert("Successfully left the hackathon!");
+      addToast("Successfully left the hackathon!", "success");
       fetchHackathons();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to leave hackathon");
+      addToast(error?.response?.data?.message || "Failed to leave hackathon", "error");
     }
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
   };
 
   const handleClearProjectFilters = () => {
@@ -332,10 +337,10 @@ function Dashboard() {
   const handleJoinProject = async (projectId) => {
     try {
       await api.post(`/projects/${projectId}/join`, {});
-      alert("Successfully joined the project!");
+      addToast("Successfully joined the project!", "success");
       fetchProjects();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to join project");
+      addToast(error?.response?.data?.message || "Failed to join project", "error");
     }
   };
 
@@ -343,10 +348,10 @@ function Dashboard() {
     if (!window.confirm("Are you sure you want to leave this project?")) return;
     try {
       await api.post(`/projects/${projectId}/leave`, {});
-      alert("Successfully left the project!");
+      addToast("Successfully left the project!", "success");
       fetchProjects();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to leave project");
+      addToast(error?.response?.data?.message || "Failed to leave project", "error");
     }
   };
 
@@ -361,10 +366,8 @@ function Dashboard() {
     }));
 
     try {
-      await api.post(
-        "/connections/request",
-        { receiverId: userId }
-      );
+      await api.post("/connections/request", { receiverId: userId });
+      addToast("Connection request sent successfully!", "success");
 
       setConnectionState((prev) => ({
         ...prev,
@@ -375,8 +378,7 @@ function Dashboard() {
         ...prev,
         [userId]: { loading: false, sent: false },
       }));
-
-      alert(error?.response?.data?.message || "Failed to send connection request");
+      addToast(error?.response?.data?.message || "Failed to send connection request", "error");
     }
   };
 
@@ -399,6 +401,75 @@ function Dashboard() {
     );
   });
 
+  const SkeletonUserCard = () => (
+    <div className="animate-pulse rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <div className="flex items-center gap-4">
+        <div className="h-16 w-16 rounded-full bg-slate-200" />
+        <div className="flex-1 space-y-2">
+          <div className="h-5 w-1/2 rounded bg-slate-200" />
+          <div className="h-4 w-3/4 rounded bg-slate-200" />
+        </div>
+      </div>
+      <div className="mt-4 h-4 w-1/3 rounded bg-slate-200" />
+      <div className="mt-5 space-y-2">
+        <div className="h-4 w-24 rounded bg-slate-200" />
+        <div className="flex gap-2">
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+        </div>
+      </div>
+      <div className="mt-6 flex gap-3">
+        <div className="h-8 w-24 rounded-full bg-slate-200" />
+        <div className="h-8 w-24 rounded-full bg-slate-200" />
+      </div>
+    </div>
+  );
+
+  const SkeletonProjectCard = () => (
+    <div className="animate-pulse rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <div className="h-6 w-2/3 rounded bg-slate-200" />
+          <div className="h-4 w-full rounded bg-slate-200" />
+        </div>
+        <div className="h-5 w-20 rounded-full bg-slate-200" />
+      </div>
+      <div className="mt-5 flex gap-2">
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+      </div>
+      <div className="mt-6 flex items-center justify-between">
+        <div className="h-4 w-24 rounded bg-slate-200" />
+        <div className="h-8 w-24 rounded-full bg-slate-200" />
+      </div>
+    </div>
+  );
+
+  const SkeletonHackathonCard = () => (
+    <div className="animate-pulse rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="h-6 w-3/4 rounded bg-slate-200" />
+            <div className="h-4 w-1/2 rounded bg-slate-200" />
+          </div>
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+          <div className="h-6 w-16 rounded-full bg-slate-200" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-10 rounded-2xl bg-slate-200" />
+          <div className="h-10 rounded-2xl bg-slate-200" />
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="h-4 w-20 rounded bg-slate-200" />
+          <div className="h-8 w-24 rounded-full bg-slate-200" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#eef4ff] px-4 py-6 sm:px-6 lg:px-8">
@@ -427,7 +498,7 @@ function Dashboard() {
                     setActiveTab(tab.key);
                   }
                 }}
-                className={`relative transition-colors duration-300 ${
+                className={`relative transition-colors duration-300 cursor-pointer ${
                   activeTab === tab.key
                     ? "text-blue-800 font-semibold"
                     : "text-slate-600 hover:text-slate-800"
@@ -451,14 +522,20 @@ function Dashboard() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search users"
+                placeholder="Search users by name, skills offered, college..."
                 className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+            {usersLoading ? (
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <SkeletonUserCard key={i} />
+                ))}
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {filteredUsers.map((user) => (
                   <div
                     key={user._id}
                     className="group rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.16)]"
@@ -511,7 +588,7 @@ function Dashboard() {
                       <button
                         type="button"
                         onClick={() => navigate(`/users/${user._id}`)}
-                        className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                        className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 cursor-pointer"
                       >
                         View Profile
                       </button>
@@ -519,19 +596,30 @@ function Dashboard() {
                         type="button"
                         onClick={() => handleConnect(user._id)}
                         disabled={connectionState[user._id]?.loading || connectionState[user._id]?.sent}
-                        className={`rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:scale-[1.02] ${connectionState[user._id]?.loading || connectionState[user._id]?.sent ? "cursor-not-allowed opacity-70 hover:scale-100" : ""}`}
+                        className={`rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:scale-[1.02] cursor-pointer ${connectionState[user._id]?.loading || connectionState[user._id]?.sent ? "cursor-not-allowed opacity-70 hover:scale-100" : ""}`}
                       >
                         {connectionState[user._id]?.loading ? "Sending..." : connectionState[user._id]?.sent ? "Request Sent" : "Connect"}
                       </button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-gray-600">
-                  No users found
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center text-slate-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl mb-4 text-slate-400">
+                  👥
                 </div>
-              )}
-            </div>
+                <h3 className="text-xl font-bold text-slate-700">No users found</h3>
+                <p className="mt-2 text-sm text-slate-500 max-w-sm">No profiles match your typed search. Try adjusting the query string.</p>
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition cursor-pointer"
+                >
+                  Clear Search
+                </button>
+              </div>
+            )}
           </>
         ) : activeTab === "projects" ? (
           <>
@@ -544,14 +632,14 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={handleClearProjectFilters}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 cursor-pointer"
                 >
                   Clear Filters
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
                 >
                   Create Project
                 </button>
@@ -575,7 +663,7 @@ function Dashboard() {
                 <select
                   value={projectDifficulty}
                   onChange={(e) => handleFilterChange("difficulty", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>Beginner</option>
@@ -589,7 +677,7 @@ function Dashboard() {
                 <select
                   value={projectTechnology}
                   onChange={(e) => handleFilterChange("technology", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>React</option>
@@ -607,7 +695,7 @@ function Dashboard() {
                 <select
                   value={projectStatus}
                   onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>Open</option>
@@ -621,7 +709,7 @@ function Dashboard() {
                 <select
                   value={projectOpenSlots}
                   onChange={(e) => handleFilterChange("openSlots", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>Has Open Slots</option>
@@ -633,7 +721,7 @@ function Dashboard() {
                 <select
                   value={projectSortBy}
                   onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option value="newest">Newest</option>
                   <option value="oldest">Oldest</option>
@@ -644,13 +732,25 @@ function Dashboard() {
             </div>
 
             {projectsLoading ? (
-              <div className="rounded-[24px] border border-slate-200 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-600">Loading projects...</p>
+              <div className="grid gap-6 md:grid-cols-2">
+                {[1, 2, 4, 5].map((i) => (
+                  <SkeletonProjectCard key={i} />
+                ))}
               </div>
             ) : projects.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-700">No projects found matching your search.</p>
-                <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search terms.</p>
+              <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center text-slate-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl mb-4 text-slate-400">
+                  🔍
+                </div>
+                <h3 className="text-xl font-bold text-slate-700">No projects found matching search</h3>
+                <p className="mt-2 text-sm text-slate-500 max-w-sm">No group works match your selected parameters. Try resetting filters.</p>
+                <button
+                  type="button"
+                  onClick={handleClearProjectFilters}
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition cursor-pointer"
+                >
+                  Reset Project Filters
+                </button>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">
@@ -697,7 +797,7 @@ function Dashboard() {
                               e.stopPropagation();
                               handleLeaveProject(project._id);
                             }}
-                            className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                            className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                           >
                             Leave Project
                           </button>
@@ -717,7 +817,7 @@ function Dashboard() {
                               e.stopPropagation();
                               handleJoinProject(project._id);
                             }}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                            className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
                           >
                             Join Project
                           </button>
@@ -729,7 +829,7 @@ function Dashboard() {
               </div>
             )}
           </>
-        ) : activeTab === "hackathons" ? (
+        ) : (
           <>
             <div className="mb-8 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
               <div>
@@ -740,14 +840,14 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={handleClearHackathonFilters}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 cursor-pointer"
                 >
                   Clear Filters
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateHackathonModal(true)}
-                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
                 >
                   Create Hackathon
                 </button>
@@ -771,7 +871,7 @@ function Dashboard() {
                 <select
                   value={hackathonDifficulty}
                   onChange={(e) => handleFilterChange("difficulty", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>Beginner</option>
@@ -785,7 +885,7 @@ function Dashboard() {
                 <select
                   value={hackathonTechnology}
                   onChange={(e) => handleFilterChange("technology", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>React</option>
@@ -803,7 +903,7 @@ function Dashboard() {
                 <select
                   value={hackathonRegistrationOpen}
                   onChange={(e) => handleFilterChange("registrationOpen", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option value="Open">Registration Open</option>
@@ -816,7 +916,7 @@ function Dashboard() {
                 <select
                   value={hackathonTeamSize}
                   onChange={(e) => handleFilterChange("teamSize", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>2</option>
@@ -832,7 +932,7 @@ function Dashboard() {
                 <select
                   value={hackathonTimeStatus}
                   onChange={(e) => handleFilterChange("timeStatus", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option>All</option>
                   <option>Upcoming</option>
@@ -846,7 +946,7 @@ function Dashboard() {
                 <select
                   value={hackathonSortBy}
                   onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                 >
                   <option value="newest">Newest</option>
                   <option value="registration_deadline">Registration Deadline</option>
@@ -857,13 +957,25 @@ function Dashboard() {
             </div>
 
             {hackathonsLoading ? (
-              <div className="rounded-[24px] border border-slate-200 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-600">Loading hackathons...</p>
+              <div className="grid gap-6 md:grid-cols-2">
+                {[1, 2, 4].map((i) => (
+                  <SkeletonHackathonCard key={i} />
+                ))}
               </div>
             ) : hackathons.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-700">No hackathons found matching your search.</p>
-                <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search terms.</p>
+              <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center text-slate-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl mb-4 text-slate-400">
+                  🏆
+                </div>
+                <h3 className="text-xl font-bold text-slate-700">No hackathons found matching search</h3>
+                <p className="mt-2 text-sm text-slate-500 max-w-sm">No developer challenges match your filter conditions. Try clearing values.</p>
+                <button
+                  type="button"
+                  onClick={handleClearHackathonFilters}
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition cursor-pointer"
+                >
+                  Reset Hackathon Filters
+                </button>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">
@@ -926,7 +1038,7 @@ function Dashboard() {
                                   e.stopPropagation();
                                   handleLeaveHackathon(hackathon._id);
                                 }}
-                                className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                                className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                               >
                                 Leave Hackathon
                               </button>
@@ -955,7 +1067,7 @@ function Dashboard() {
                                   e.stopPropagation();
                                   handleJoinHackathon(hackathon._id);
                                 }}
-                                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
                               >
                                 Join Hackathon
                               </button>
@@ -969,10 +1081,6 @@ function Dashboard() {
               </div>
             )}
           </>
-        ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white p-16 text-center text-lg font-medium text-slate-600 shadow-sm">
-            Messages Coming Soon
-          </div>
         )}
       </div>
 
@@ -989,7 +1097,7 @@ function Dashboard() {
                   type="text"
                   value={createFormData.title}
                   onChange={(e) => setCreateFormData({ ...createFormData, title: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Project title"
                   required
                 />
@@ -1001,7 +1109,7 @@ function Dashboard() {
                   value={createFormData.description}
                   onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
                   rows="3"
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Describe your project"
                   required
                 />
@@ -1013,7 +1121,7 @@ function Dashboard() {
                   type="text"
                   value={createFormData.technologies}
                   onChange={(e) => setCreateFormData({ ...createFormData, technologies: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. React, Node.js, MongoDB"
                 />
               </div>
@@ -1024,7 +1132,7 @@ function Dashboard() {
                   <select
                     value={createFormData.difficulty}
                     onChange={(e) => setCreateFormData({ ...createFormData, difficulty: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                   >
                     <option>Beginner</option>
                     <option>Intermediate</option>
@@ -1040,7 +1148,7 @@ function Dashboard() {
                     max="10"
                     value={createFormData.maxMembers}
                     onChange={(e) => setCreateFormData({ ...createFormData, maxMembers: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
@@ -1050,14 +1158,14 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingProject}
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
                 >
                   {creatingProject ? "Creating..." : "Create Project"}
                 </button>
@@ -1080,7 +1188,7 @@ function Dashboard() {
                   type="text"
                   value={createHackathonFormData.title}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, title: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. HackMIT"
                   required
                 />
@@ -1092,7 +1200,7 @@ function Dashboard() {
                   type="text"
                   value={createHackathonFormData.organizer}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, organizer: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. MIT CS Department"
                   required
                 />
@@ -1104,7 +1212,7 @@ function Dashboard() {
                   value={createHackathonFormData.description}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, description: e.target.value })}
                   rows="3"
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Provide hackathon rules, goals, and description"
                   required
                 />
@@ -1116,7 +1224,7 @@ function Dashboard() {
                   type="text"
                   value={createHackathonFormData.technologies}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, technologies: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. React, Python, Solidity"
                 />
               </div>
@@ -1127,7 +1235,7 @@ function Dashboard() {
                   <select
                     value={createHackathonFormData.difficulty}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, difficulty: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                   >
                     <option>Beginner</option>
                     <option>Intermediate</option>
@@ -1140,7 +1248,7 @@ function Dashboard() {
                   <select
                     value={createHackathonFormData.mode}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, mode: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
                   >
                     <option>Online</option>
                     <option>Offline</option>
@@ -1156,7 +1264,7 @@ function Dashboard() {
                     type="text"
                     value={createHackathonFormData.location}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, location: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="e.g. Building 10, MIT Campus"
                   />
                 </div>
@@ -1170,7 +1278,7 @@ function Dashboard() {
                     min="1"
                     value={createHackathonFormData.teamSize}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, teamSize: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
@@ -1182,7 +1290,7 @@ function Dashboard() {
                     min="1"
                     value={createHackathonFormData.maxTeams}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, maxTeams: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
@@ -1194,7 +1302,7 @@ function Dashboard() {
                   type="text"
                   value={createHackathonFormData.prizePool}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, prizePool: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. $5,000 Cash + Goodies"
                 />
               </div>
@@ -1205,7 +1313,7 @@ function Dashboard() {
                   type="date"
                   value={createHackathonFormData.registrationDeadline}
                   onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, registrationDeadline: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
@@ -1216,7 +1324,7 @@ function Dashboard() {
                     type="date"
                     value={createHackathonFormData.startDate}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, startDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
@@ -1226,7 +1334,7 @@ function Dashboard() {
                     type="date"
                     value={createHackathonFormData.endDate}
                     onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, endDate: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               </div>
@@ -1235,14 +1343,14 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setShowCreateHackathonModal(false)}
-                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingHackathon}
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
                 >
                   {creatingHackathon ? "Creating..." : "Create Hackathon"}
                 </button>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext";
 import api from "../api/api";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
 
@@ -8,6 +9,7 @@ function Chat() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userId } = useParams();
+  const { addToast } = useToast();
 
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -126,7 +128,7 @@ function Chat() {
     } catch {
       // Remove optimistic message on fail
       setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
-      alert("Failed to send message. Please retry.");
+      addToast("Failed to send message. Please retry.", "error");
     } finally {
       setSending(false);
     }
@@ -159,11 +161,22 @@ function Chat() {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {loadingConversations ? (
-              <div className="py-10 text-center text-sm font-medium text-slate-500">Loading inbox...</div>
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-transparent">
+                    <div className="h-12 w-12 rounded-full bg-slate-200" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-1/3 bg-slate-200 rounded" />
+                      <div className="h-3 w-3/4 bg-slate-200 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : conversations.length === 0 ? (
-              <div className="py-10 px-4 text-center text-sm text-slate-500">
-                <p className="font-semibold">No messages yet</p>
-                <p className="mt-1 text-xs">Connect with other students in Dashboard to start swapping skills!</p>
+              <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500">
+                <div className="text-3xl mb-3">💬</div>
+                <p className="font-semibold text-slate-700">No messages yet</p>
+                <p className="mt-1 text-xs text-slate-400 max-w-[200px]">Connect with other students in Dashboard to start swapping skills!</p>
               </div>
             ) : (
               conversations.map((conv) => {
@@ -221,7 +234,7 @@ function Chat() {
                   <button
                     type="button"
                     onClick={() => navigate("/chat")}
-                    className="md:hidden p-2 rounded-full hover:bg-slate-200 text-slate-600 transition"
+                    className="md:hidden p-2 rounded-full hover:bg-slate-200 text-slate-600 transition cursor-pointer"
                   >
                     ← Back
                   </button>
@@ -250,7 +263,7 @@ function Chat() {
                   <button
                     type="button"
                     onClick={() => navigate(`/users/${activeParticipant._id}`)}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                   >
                     View Profile
                   </button>
@@ -260,8 +273,9 @@ function Chat() {
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#fafcff]">
                 {loadingMessages ? (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm font-semibold">
-                    Loading conversations history...
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm gap-2 animate-pulse">
+                    <div className="h-8 w-40 bg-slate-200 rounded-full" />
+                    <p className="font-semibold">Loading conversation history...</p>
                   </div>
                 ) : error ? (
                   <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 text-center">
@@ -269,13 +283,14 @@ function Chat() {
                     <button
                       type="button"
                       onClick={fetchConversation}
-                      className="mt-3 text-xs font-bold underline text-red-950"
+                      className="mt-3 text-xs font-bold underline text-red-950 cursor-pointer"
                     >
                       Retry Loading
                     </button>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-500 p-8 text-center border-dashed">
+                  <div className="h-full flex flex-col items-center justify-center text-slate-500 p-8 text-center">
+                    <div className="text-3xl mb-3">💬</div>
                     <p className="font-bold text-slate-700 text-lg">Send the first message</p>
                     <p className="text-xs text-slate-400 mt-2 max-w-sm">
                       Swapping skills starts with a friendly conversation. Ask about their projects or coordinate!
@@ -320,7 +335,7 @@ function Chat() {
                 <button
                   type="submit"
                   disabled={!text.trim() || sending}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <span className="text-lg">➔</span>
                 </button>

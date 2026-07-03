@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import { FiBell, FiUser } from "react-icons/fi";
 import api from "../../api/api";
 
 function TopNavbar() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const isLoggedIn = !!localStorage.getItem("token");
 
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     const fetchUnreadCount = async () => {
       try {
         const response = await api.get("/notifications");
@@ -24,7 +27,7 @@ function TopNavbar() {
     // Poll every 8 seconds
     const interval = setInterval(fetchUnreadCount, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isLoggedIn]);
 
   const linkBase = "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300";
 
@@ -44,39 +47,58 @@ function TopNavbar() {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm shadow-slate-200 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-        <div className="flex items-center gap-0 text-xl font-extrabold tracking-tight text-slate-900">
+        <Link to="/" className="flex items-center gap-0 text-xl font-extrabold tracking-tight text-slate-900">
           <span className="text-blue-600">Skill</span><span className="text-violet-600">Forge</span>
-        </div>
+        </Link>
 
-        <nav className="flex flex-wrap items-center justify-center gap-3">
-          {renderLink("/dashboard", "Dashboard")}
-          {renderLink("/connections", "Connections")}
-        </nav>
+        {isLoggedIn ? (
+          <>
+            <nav className="flex flex-wrap items-center justify-center gap-3">
+              {renderLink("/dashboard", "Dashboard")}
+              {renderLink("/connections", "Connections")}
+            </nav>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate("/notifications")}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
-            aria-label="Notifications"
-          >
-            <FiBell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
-                {unreadCount}
-              </span>
-            )}
-          </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/notifications")}
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
+                aria-label="Notifications"
+              >
+                <FiBell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-          <button
-            type="button"
-            onClick={() => navigate("/profile")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
-            aria-label="Profile"
-          >
-            <FiUser className="h-5 w-5" />
-          </button>
-        </div>
+              <button
+                type="button"
+                onClick={() => navigate("/profile")}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
+                aria-label="Profile"
+              >
+                <FiUser className="h-5 w-5" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-4">
+            <Link
+              to="/login"
+              className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition"
+            >
+              Login
+            </Link>
+            <Link
+              to="/signup"
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

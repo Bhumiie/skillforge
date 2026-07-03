@@ -2,10 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 function Projects() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Bind filter values directly to search params
@@ -19,13 +21,12 @@ function Projects() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
 
-  const [joinMessage, setJoinMessage] = useState("");
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [joiningId, setJoiningId] = useState(null);
 
-  // Sync search input with URL search param changes (e.g. back/forward or clear)
+  // Sync search input with URL search param changes
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearch(searchParams.get("search") || "");
@@ -84,10 +85,11 @@ function Projects() {
       setProjects(response.data.projects || []);
     } catch {
       setError("Failed to load projects");
+      addToast("Failed to fetch project listings", "error");
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, addToast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,12 +107,10 @@ function Projects() {
 
     try {
       await api.post(`/projects/${projectId}/join`, {});
-      setJoinMessage("Successfully joined the project!");
-      setTimeout(() => setJoinMessage(""), 3000);
+      addToast("Successfully joined the project!", "success");
       fetchProjects();
     } catch {
-      setJoinMessage("Failed to join project");
-      setTimeout(() => setJoinMessage(""), 3000);
+      addToast("Failed to join project", "error");
     } finally {
       setJoiningId(null);
     }
@@ -121,14 +121,34 @@ function Projects() {
 
     try {
       await api.post(`/projects/${projectId}/leave`, {});
-      setJoinMessage("Successfully left the project!");
-      setTimeout(() => setJoinMessage(""), 3000);
+      addToast("Successfully left the project!", "success");
       fetchProjects();
     } catch {
-      setJoinMessage("Failed to leave project");
-      setTimeout(() => setJoinMessage(""), 3000);
+      addToast("Failed to leave project", "error");
     }
   };
+
+  const SkeletonCard = () => (
+    <div className="animate-pulse rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <div className="h-6 w-2/3 rounded bg-slate-200" />
+          <div className="h-4 w-full rounded bg-slate-200" />
+          <div className="h-4 w-5/6 rounded bg-slate-200" />
+        </div>
+        <div className="h-6 w-20 rounded-full bg-slate-200" />
+      </div>
+      <div className="mt-5 flex gap-2">
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+      </div>
+      <div className="mt-6 flex items-center justify-between">
+        <div className="h-4 w-28 rounded bg-slate-200" />
+        <div className="h-8 w-24 rounded-full bg-slate-200" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8">
@@ -144,7 +164,7 @@ function Projects() {
             <button
               type="button"
               onClick={handleClearFilters}
-              className="self-start rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+              className="self-start rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 cursor-pointer"
             >
               Clear Filters
             </button>
@@ -166,7 +186,7 @@ function Projects() {
               <select
                 value={difficulty}
                 onChange={(e) => handleFilterChange("difficulty", e.target.value)}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
               >
                 <option>All</option>
                 <option>Beginner</option>
@@ -180,7 +200,7 @@ function Projects() {
               <select
                 value={technology}
                 onChange={(e) => handleFilterChange("technology", e.target.value)}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
               >
                 <option>All</option>
                 <option>React</option>
@@ -198,7 +218,7 @@ function Projects() {
               <select
                 value={status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
               >
                 <option>All</option>
                 <option>Open</option>
@@ -212,7 +232,7 @@ function Projects() {
               <select
                 value={openSlots}
                 onChange={(e) => handleFilterChange("openSlots", e.target.value)}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
               >
                 <option>All</option>
                 <option>Has Open Slots</option>
@@ -224,7 +244,7 @@ function Projects() {
               <select
                 value={sortBy}
                 onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 cursor-pointer"
               >
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
@@ -236,17 +256,29 @@ function Projects() {
         </div>
 
         {loading ? (
-          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-            <p className="text-lg font-medium text-slate-600">Loading projects...</p>
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="rounded-[28px] border border-red-200 bg-red-50 p-10 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <p className="text-lg font-medium text-red-700">{error}</p>
           </div>
         ) : projects.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-slate-300 bg-white p-10 text-center text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-            <p className="text-lg font-semibold text-slate-700">No projects found matching your search.</p>
-            <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search terms.</p>
+          <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl mb-4 text-slate-400">
+              🔍
+            </div>
+            <h3 className="text-xl font-bold text-slate-700">No projects found matching your search.</h3>
+            <p className="mt-2 text-sm text-slate-500 max-w-sm">Try adjusting your filters or search terms.</p>
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition cursor-pointer"
+            >
+              Reset All Filters
+            </button>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -298,7 +330,7 @@ function Projects() {
                           e.stopPropagation();
                           handleLeave(project._id);
                         }}
-                        className="rounded-full bg-rose-50 border border-rose-200 px-5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                        className="rounded-full bg-rose-50 border border-rose-200 px-5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                       >
                         Leave Project
                       </button>
@@ -319,7 +351,7 @@ function Projects() {
                           handleJoin(project._id);
                         }}
                         disabled={joiningId === project._id}
-                        className="rounded-full bg-blue-600 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                        className="rounded-full bg-blue-600 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
                       >
                         {joiningId === project._id ? "Joining..." : "Join Project"}
                       </button>
@@ -328,12 +360,6 @@ function Projects() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {joinMessage && (
-          <div className="mt-8 rounded-[24px] border border-blue-200 bg-blue-50 px-6 py-4 text-blue-700 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-            {joinMessage}
           </div>
         )}
       </div>
