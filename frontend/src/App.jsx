@@ -11,6 +11,7 @@ import UserProfile from "./pages/UserProfile";
 import Requests from "./pages/Requests";
 import Connections from "./pages/Connections";
 import Chat from "./pages/Chat";
+import Notifications from "./pages/Notifications";
 import ProjectDetails from "./pages/ProjectDetails";
 import HackathonDetails from "./pages/HackathonDetails";
 
@@ -55,6 +56,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Connections />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         }
       />

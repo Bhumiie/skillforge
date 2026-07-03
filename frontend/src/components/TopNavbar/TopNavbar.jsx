@@ -1,8 +1,30 @@
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiBell, FiUser } from "react-icons/fi";
+import api from "../../api/api";
 
 function TopNavbar() {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.get("/notifications");
+        if (response.data.success) {
+          const unreads = response.data.notifications.filter((n) => !n.isRead).length;
+          setUnreadCount(unreads);
+        }
+      } catch (err) {
+        console.error("Failed to fetch unread notifications count", err);
+      }
+    };
+
+    fetchUnreadCount();
+    // Poll every 8 seconds
+    const interval = setInterval(fetchUnreadCount, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   const linkBase = "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300";
 
@@ -34,11 +56,16 @@ function TopNavbar() {
         <div className="flex items-center gap-3">
           <button
             type="button"
+            onClick={() => navigate("/notifications")}
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
             aria-label="Notifications"
           >
             <FiBell className="h-5 w-5" />
-            <span className="pointer-events-none absolute -right-1 top-1 h-2 w-2 rounded-full bg-transparent" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
+                {unreadCount}
+              </span>
+            )}
           </button>
 
           <button

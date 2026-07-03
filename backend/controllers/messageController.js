@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import Message from "../models/Message.js";
+import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -15,6 +17,20 @@ export const sendMessage = async (req, res) => {
       receiver: receiverId,
       text: text.trim(),
     });
+
+    try {
+      const senderUser = await User.findById(sender);
+      await Notification.create({
+        recipient: receiverId,
+        sender,
+        type: "message",
+        title: "New Message",
+        message: `${senderUser.name} sent you a message: "${text.slice(0, 30)}${text.length > 30 ? "..." : ""}"`,
+        referenceId: message._id,
+      });
+    } catch (notifErr) {
+      console.error("Failed to generate message notification:", notifErr);
+    }
 
     res.status(201).json({
       success: true,

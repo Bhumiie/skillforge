@@ -1,5 +1,6 @@
 import Project from "../models/Project.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -274,6 +275,20 @@ export const joinProject = async (req, res) => {
     await project.save();
     await project.populate("owner", "name email profilePic");
     await project.populate("members", "name email profilePic");
+
+    try {
+      const joiningUser = await User.findById(req.user.id);
+      await Notification.create({
+        recipient: project.owner._id || project.owner,
+        sender: req.user.id,
+        type: "project",
+        title: "New Team Member",
+        message: `${joiningUser.name} joined your project: "${project.title}"`,
+        referenceId: project._id,
+      });
+    } catch (notifErr) {
+      console.error("Failed to generate project join notification:", notifErr);
+    }
 
     res.json({
       success: true,

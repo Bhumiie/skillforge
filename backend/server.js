@@ -9,6 +9,7 @@ import messageRoutes from "./routes/messageRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import hackathonRoutes from "./routes/hackathonRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/hackathons", hackathonRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const startServer = async () => {
   try {

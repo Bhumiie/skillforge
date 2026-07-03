@@ -1,4 +1,6 @@
 import Hackathon from "../models/Hackathon.js";
+import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 // Create Hackathon
 export const createHackathon = async (req, res) => {
@@ -190,6 +192,20 @@ export const joinHackathon = async (req, res) => {
     await hackathon.save();
     await hackathon.populate("owner", "name email");
     await hackathon.populate("participants", "name email");
+
+    try {
+      const registeringUser = await User.findById(req.user.id);
+      await Notification.create({
+        recipient: hackathon.owner._id || hackathon.owner,
+        sender: req.user.id,
+        type: "hackathon",
+        title: "Hackathon Registration",
+        message: `${registeringUser.name} registered for your hackathon: "${hackathon.title}"`,
+        referenceId: hackathon._id,
+      });
+    } catch (notifErr) {
+      console.error("Failed to generate hackathon registration notification:", notifErr);
+    }
 
     res.json(hackathon);
   } catch (error) {

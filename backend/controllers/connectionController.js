@@ -1,4 +1,6 @@
 import Connection from "../models/Connection.js";
+import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 export const getConnections = async (req, res) => {
   try {
@@ -58,6 +60,20 @@ export const acceptConnectionRequest = async (req, res) => {
 
     connection.status = "accepted";
     await connection.save();
+
+    try {
+      const acceptingUser = await User.findById(req.user.id);
+      await Notification.create({
+        recipient: connection.sender,
+        sender: req.user.id,
+        type: "connection",
+        title: "Connection Accepted",
+        message: `${acceptingUser.name} accepted your connection request.`,
+        referenceId: connection._id,
+      });
+    } catch (notifErr) {
+      console.error("Failed to generate connection accepted notification:", notifErr);
+    }
 
     res.json({
       success: true,
@@ -124,6 +140,20 @@ export const sendConnectionRequest = async (req, res) => {
       receiver: receiverId,
       status: "pending",
     });
+
+    try {
+      const senderUser = await User.findById(senderId);
+      await Notification.create({
+        recipient: receiverId,
+        sender: senderId,
+        type: "connection",
+        title: "Connection Request",
+        message: `${senderUser.name} sent you a connection request.`,
+        referenceId: connection._id,
+      });
+    } catch (notifErr) {
+      console.error("Failed to generate connection request notification:", notifErr);
+    }
 
     res.status(201).json({
       success: true,
