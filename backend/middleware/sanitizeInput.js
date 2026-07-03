@@ -9,29 +9,34 @@ const escapeHTML = (str) => {
     .replace(/\//g, "&#x2F;");
 };
 
-const sanitizeValue = (value) => {
-  if (typeof value === "string") {
-    return escapeHTML(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(sanitizeValue);
-  }
-  if (value !== null && typeof value === "object") {
-    const sanitized = {};
-    for (const key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key)) {
-        sanitized[key] = sanitizeValue(value[key]);
+const sanitizeInputInPlace = (obj) => {
+  if (obj !== null && typeof obj === "object") {
+    if (Array.isArray(obj)) {
+      for (let i = 0; i < obj.length; i++) {
+        if (typeof obj[i] === "string") {
+          obj[i] = escapeHTML(obj[i]);
+        } else if (typeof obj[i] === "object" && obj[i] !== null) {
+          sanitizeInputInPlace(obj[i]);
+        }
+      }
+    } else {
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          if (typeof obj[key] === "string") {
+            obj[key] = escapeHTML(obj[key]);
+          } else if (typeof obj[key] === "object" && obj[key] !== null) {
+            sanitizeInputInPlace(obj[key]);
+          }
+        }
       }
     }
-    return sanitized;
   }
-  return value;
 };
 
 const sanitizeInput = (req, res, next) => {
-  if (req.body) req.body = sanitizeValue(req.body);
-  if (req.query) req.query = sanitizeValue(req.query);
-  if (req.params) req.params = sanitizeValue(req.params);
+  if (req.body) sanitizeInputInPlace(req.body);
+  if (req.query) sanitizeInputInPlace(req.query);
+  if (req.params) sanitizeInputInPlace(req.params);
   next();
 };
 

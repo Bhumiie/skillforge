@@ -1,25 +1,30 @@
-const sanitizeMongoData = (val) => {
-  if (val !== null && typeof val === "object") {
-    if (Array.isArray(val)) {
-      return val.map(sanitizeMongoData);
-    }
-    const cleaned = {};
-    for (const key in val) {
-      if (Object.prototype.hasOwnProperty.call(val, key)) {
-        // Strip out any keys starting with $ or containing a dot
-        if (!key.startsWith("$") && !key.includes(".")) {
-          cleaned[key] = sanitizeMongoData(val[key]);
+const sanitizeInPlace = (obj) => {
+  if (obj !== null && typeof obj === "object") {
+    if (Array.isArray(obj)) {
+      for (let i = 0; i < obj.length; i++) {
+        if (typeof obj[i] === "object" && obj[i] !== null) {
+          sanitizeInPlace(obj[i]);
+        }
+      }
+    } else {
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          if (key.startsWith("$") || key.includes(".")) {
+            delete obj[key];
+          } else {
+            if (typeof obj[key] === "object" && obj[key] !== null) {
+              sanitizeInPlace(obj[key]);
+            }
+          }
         }
       }
     }
-    return cleaned;
   }
-  return val;
 };
 
 export const mongoSanitize = (req, res, next) => {
-  if (req.body) req.body = sanitizeMongoData(req.body);
-  if (req.query) req.query = sanitizeMongoData(req.query);
-  if (req.params) req.params = sanitizeMongoData(req.params);
+  if (req.body) sanitizeInPlace(req.body);
+  if (req.query) sanitizeInPlace(req.query);
+  if (req.params) sanitizeInPlace(req.params);
   next();
 };
