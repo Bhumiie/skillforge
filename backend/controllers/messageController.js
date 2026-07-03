@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Message from "../models/Message.js";
 
 export const sendMessage = async (req, res) => {
@@ -40,6 +41,80 @@ export const getConversation = async (req, res) => {
     res.json({
       success: true,
       messages,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getConversationsList = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+
+    // Aggregate unique conversation participants with the latest message
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [{ sender: userId }, { receiver: userId }],
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $gt: ["$sender", "$receiver"] },
+              { sender: "$sender", receiver: "$receiver" },
+              { sender: "$receiver", receiver: "$sender" },
+            ],
+          },
+          lastMessage: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: {
+            otherUserId: {
+              $cond: [
+                { $eq: ["$_id.sender", userId] },
+                "$_id.receiver",
+                "$_id.sender",
+              ],
+            },
+          },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$otherUserId"] } } },
+            { $project: { name: 1, email: 1, profilePic: 1 } },
+          ],
+          as: "participant",
+        },
+      },
+      {
+        $unwind: "$participant",
+      },
+      {
+        $project: {
+          _id: "$participant._id",
+          participant: 1,
+          lastMessage: {
+            text: "$lastMessage.text",
+            createdAt: "$lastMessage.createdAt",
+            sender: "$lastMessage.sender",
+            receiver: "$lastMessage.receiver",
+          },
+        },
+      },
+      {
+        $sort: { "lastMessage.createdAt": -1 },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      conversations,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -420,7 +420,13 @@ function Dashboard() {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => {
+                  if (tab.key === "messages") {
+                    navigate("/chat");
+                  } else {
+                    setActiveTab(tab.key);
+                  }
+                }}
                 className={`relative transition-colors duration-300 ${
                   activeTab === tab.key
                     ? "text-blue-800 font-semibold"
