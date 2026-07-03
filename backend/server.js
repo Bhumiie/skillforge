@@ -8,6 +8,7 @@ import connectionRoutes from "./routes/connectionRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import hackathonRoutes from "./routes/hackathonRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
@@ -19,6 +20,9 @@ app.use(express.json());
 // Allow requests from the frontend
 app.use(cors());
 
+// Serve uploads folder statically
+app.use("/uploads", express.static("uploads"));
+
 // Mount all routes
 app.use("/", routes);
 app.use("/api/users", userRoutes);
@@ -26,6 +30,7 @@ app.use("/api/connections", connectionRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/hackathons", hackathonRoutes);
+app.use("/api/upload", uploadRoutes);
 
 const startServer = async () => {
   try {

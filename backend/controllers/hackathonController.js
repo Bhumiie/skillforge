@@ -17,9 +17,77 @@ export const createHackathon = async (req, res) => {
 // Get All Hackathons
 export const getHackathons = async (req, res) => {
   try {
-    const hackathons = await Hackathon.find()
+    const { search, technology, difficulty, registrationOpen, teamSize, timeStatus, sortBy } = req.query;
+
+    const query = {};
+
+    // 1. Search Query
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { technologies: { $regex: search, $options: "i" } },
+        { organizer: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    // 2. Filter Difficulty
+    if (difficulty && difficulty !== "All") {
+      query.difficulty = difficulty;
+    }
+
+    // 3. Filter Technology/Skills
+    if (technology && technology !== "All") {
+      query.technologies = { $regex: `^${technology}$`, $options: "i" };
+    }
+
+    // 4. Filter Team Size
+    if (teamSize && teamSize !== "All") {
+      query.teamSize = parseInt(teamSize);
+    }
+
+    // 5. Filter Registration Open
+    const currentDate = new Date();
+    if (registrationOpen === "true") {
+      query.status = "Open";
+      query.$or = [
+        { registrationDeadline: { $exists: false } },
+        { registrationDeadline: null },
+        { registrationDeadline: { $gt: currentDate } }
+      ];
+    } else if (registrationOpen === "false") {
+      query.$or = [
+        { status: "Closed" },
+        { registrationDeadline: { $lte: currentDate } }
+      ];
+    }
+
+    // 6. Filter Time Status (upcoming / ongoing / finished)
+    if (timeStatus && timeStatus !== "All") {
+      if (timeStatus === "upcoming") {
+        query.startDate = { $gt: currentDate };
+      } else if (timeStatus === "ongoing") {
+        query.startDate = { $lte: currentDate };
+        query.endDate = { $gte: currentDate };
+      } else if (timeStatus === "finished") {
+        query.endDate = { $lt: currentDate };
+      }
+    }
+
+    // 7. Sort logic
+    let sortObj = { createdAt: -1 }; // default newest
+    if (sortBy === "registration_deadline") {
+      sortObj = { registrationDeadline: 1 };
+    } else if (sortBy === "start_date") {
+      sortObj = { startDate: 1 };
+    } else if (sortBy === "prize") {
+      sortObj = { prizePool: -1 };
+    }
+
+    const hackathons = await Hackathon.find(query)
       .populate("owner", "name email")
-      .sort({ createdAt: -1 });
+      .populate("participants", "name email")
+      .sort(sortObj);
 
     res.json(hackathons);
   } catch (error) {

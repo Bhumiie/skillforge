@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
@@ -7,8 +7,32 @@ import TopNavbar from "../components/TopNavbar/TopNavbar";
 function Dashboard() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Active Tab from URL
+  const activeTab = searchParams.get("tab") || "students";
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab }, { replace: true });
+    setProjectSearch("");
+    setHackathonSearch("");
+  };
+
+  // Bind filter values directly to search params
+  const projectDifficulty = searchParams.get("difficulty") || "All";
+  const projectTechnology = searchParams.get("technology") || "All";
+  const projectStatus = searchParams.get("status") || "All";
+  const projectOpenSlots = searchParams.get("openSlots") || "All";
+  const projectSortBy = searchParams.get("sortBy") || "newest";
+
+  const hackathonDifficulty = searchParams.get("difficulty") || "All";
+  const hackathonTechnology = searchParams.get("technology") || "All";
+  const hackathonRegistrationOpen = searchParams.get("registrationOpen") || "All";
+  const hackathonTeamSize = searchParams.get("teamSize") || "All";
+  const hackathonTimeStatus = searchParams.get("timeStatus") || "All";
+  const hackathonSortBy = searchParams.get("sortBy") || "newest";
+
   const [users, setUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState("students");
   const [search, setSearch] = useState("");
   const [connectionState, setConnectionState] = useState({});
   const [projects, setProjects] = useState([]);
@@ -43,6 +67,13 @@ function Dashboard() {
     prizePool: "",
   });
 
+  // Local search text inputs
+  const [projectSearch, setProjectSearch] = useState(searchParams.get("search") || "");
+  const [debouncedProjectSearch, setDebouncedProjectSearch] = useState(searchParams.get("search") || "");
+
+  const [hackathonSearch, setHackathonSearch] = useState(searchParams.get("search") || "");
+  const [debouncedHackathonSearch, setDebouncedHackathonSearch] = useState(searchParams.get("search") || "");
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -56,43 +87,130 @@ function Dashboard() {
     fetchUsers();
   }, []);
 
+  // Sync inputs with URL search param changes
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (activeTab !== "projects") return;
+    if (activeTab === "projects") {
+      setProjectSearch(searchParams.get("search") || "");
+    } else if (activeTab === "hackathons") {
+      setHackathonSearch(searchParams.get("search") || "");
+    }
+  }, [searchParams, activeTab]);
 
-      setProjectsLoading(true);
+  // Debouncing for Search Inputs
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedProjectSearch(projectSearch);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [projectSearch]);
 
-      try {
-        const response = await api.get("/projects");
-        setProjects(response.data.projects || []);
-      } catch (error) {
-        console.error("Failed to load projects", error);
-      } finally {
-        setProjectsLoading(false);
-      }
-    };
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedHackathonSearch(hackathonSearch);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [hackathonSearch]);
 
+  // Write debounced searches to URL params
+  useEffect(() => {
+    if (activeTab !== "projects") return;
+    const currentParams = Object.fromEntries(searchParams.entries());
+    if (debouncedProjectSearch) {
+      currentParams.search = debouncedProjectSearch;
+    } else {
+      delete currentParams.search;
+    }
+    setSearchParams(currentParams, { replace: true });
+  }, [debouncedProjectSearch, setSearchParams, activeTab, searchParams]);
+
+  useEffect(() => {
+    if (activeTab !== "hackathons") return;
+    const currentParams = Object.fromEntries(searchParams.entries());
+    if (debouncedHackathonSearch) {
+      currentParams.search = debouncedHackathonSearch;
+    } else {
+      delete currentParams.search;
+    }
+    setSearchParams(currentParams, { replace: true });
+  }, [debouncedHackathonSearch, setSearchParams, activeTab, searchParams]);
+
+  const handleFilterChange = (key, value) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    if (value && value !== "All") {
+      currentParams[key] = value;
+    } else {
+      delete currentParams[key];
+    }
+    setSearchParams(currentParams, { replace: true });
+  };
+
+  const fetchProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    try {
+      const params = {};
+      const s = searchParams.get("search");
+      const d = searchParams.get("difficulty");
+      const t = searchParams.get("technology");
+      const st = searchParams.get("status");
+      const os = searchParams.get("openSlots");
+      const sb = searchParams.get("sortBy");
+
+      if (s) params.search = s;
+      if (d && d !== "All") params.difficulty = d;
+      if (t && t !== "All") params.technology = t;
+      if (st && st !== "All") params.status = st;
+      if (os === "Has Open Slots") params.openSlots = "true";
+      if (sb && sb !== "newest") params.sortBy = sb;
+
+      const response = await api.get("/projects", { params });
+      setProjects(response.data.projects || []);
+    } catch (error) {
+      console.error("Failed to load projects", error);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (activeTab !== "projects") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProjects();
-  }, [activeTab]);
+  }, [activeTab, fetchProjects]);
+
+  const fetchHackathons = useCallback(async () => {
+    setHackathonsLoading(true);
+    try {
+      const params = {};
+      const s = searchParams.get("search");
+      const d = searchParams.get("difficulty");
+      const t = searchParams.get("technology");
+      const ro = searchParams.get("registrationOpen");
+      const ts = searchParams.get("teamSize");
+      const tsStat = searchParams.get("timeStatus");
+      const sb = searchParams.get("sortBy");
+
+      if (s) params.search = s;
+      if (d && d !== "All") params.difficulty = d;
+      if (t && t !== "All") params.technology = t;
+      if (ro && ro !== "All") params.registrationOpen = ro === "Open" ? "true" : "false";
+      if (ts && ts !== "All") params.teamSize = ts;
+      if (tsStat && tsStat !== "All") params.timeStatus = tsStat.toLowerCase();
+      if (sb && sb !== "newest") params.sortBy = sb;
+
+      const response = await api.get("/hackathons", { params });
+      setHackathons(response.data || []);
+    } catch (error) {
+      console.error("Failed to load hackathons", error);
+    } finally {
+      setHackathonsLoading(false);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
-    const fetchHackathons = async () => {
-      if (activeTab !== "hackathons") return;
-
-      setHackathonsLoading(true);
-
-      try {
-        const response = await api.get("/hackathons");
-        setHackathons(response.data || []);
-      } catch (error) {
-        console.error("Failed to load hackathons", error);
-      } finally {
-        setHackathonsLoading(false);
-      }
-    };
-
+    if (activeTab !== "hackathons") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHackathons();
-  }, [activeTab]);
+  }, [activeTab, fetchHackathons]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
@@ -118,8 +236,7 @@ function Dashboard() {
         maxMembers: 3,
       });
 
-      const response = await api.get("/projects");
-      setProjects(response.data.projects || []);
+      fetchProjects();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to create project");
     } finally {
@@ -167,8 +284,7 @@ function Dashboard() {
         prizePool: "",
       });
 
-      const response = await api.get("/hackathons");
-      setHackathons(response.data || []);
+      fetchHackathons();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to create hackathon");
     } finally {
@@ -180,8 +296,7 @@ function Dashboard() {
     try {
       await api.post(`/hackathons/${hackathonId}/join`, {});
       alert("Successfully joined the hackathon!");
-      const response = await api.get("/hackathons");
-      setHackathons(response.data || []);
+      fetchHackathons();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to join hackathon");
     }
@@ -192,8 +307,7 @@ function Dashboard() {
     try {
       await api.post(`/hackathons/${hackathonId}/leave`, {});
       alert("Successfully left the hackathon!");
-      const response = await api.get("/hackathons");
-      setHackathons(response.data || []);
+      fetchHackathons();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to leave hackathon");
     }
@@ -205,12 +319,21 @@ function Dashboard() {
     navigate("/login");
   };
 
+  const handleClearProjectFilters = () => {
+    setProjectSearch("");
+    setSearchParams({ tab: "projects" }, { replace: true });
+  };
+
+  const handleClearHackathonFilters = () => {
+    setHackathonSearch("");
+    setSearchParams({ tab: "hackathons" }, { replace: true });
+  };
+
   const handleJoinProject = async (projectId) => {
     try {
       await api.post(`/projects/${projectId}/join`, {});
       alert("Successfully joined the project!");
-      const response = await api.get("/projects");
-      setProjects(response.data.projects || []);
+      fetchProjects();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to join project");
     }
@@ -221,8 +344,7 @@ function Dashboard() {
     try {
       await api.post(`/projects/${projectId}/leave`, {});
       alert("Successfully left the project!");
-      const response = await api.get("/projects");
-      setProjects(response.data.projects || []);
+      fetchProjects();
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to leave project");
     }
@@ -407,18 +529,112 @@ function Dashboard() {
           </>
         ) : activeTab === "projects" ? (
           <>
-            <div className="mb-10 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
+            <div className="mb-8 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900">Recommended Projects</h2>
                 <p className="mt-1 text-sm text-gray-600">Hand-picked ideas to start collaborating with your team.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                Create Project
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearProjectFilters}
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+                >
+                  Clear Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Create Project
+                </button>
+              </div>
+            </div>
+
+            {/* Project Filter Bar */}
+            <div className="mb-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search projects</span>
+                <input
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
+                  placeholder="Search title, tech, owner..."
+                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Difficulty</span>
+                <select
+                  value={projectDifficulty}
+                  onChange={(e) => handleFilterChange("difficulty", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Technology</span>
+                <select
+                  value={projectTechnology}
+                  onChange={(e) => handleFilterChange("technology", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>React</option>
+                  <option>Node.js</option>
+                  <option>Python</option>
+                  <option>Java</option>
+                  <option>AI/ML</option>
+                  <option>CSS</option>
+                  <option>Solidity</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</span>
+                <select
+                  value={projectStatus}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>Open</option>
+                  <option>Full</option>
+                  <option>Closed</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Open Slots</span>
+                <select
+                  value={projectOpenSlots}
+                  onChange={(e) => handleFilterChange("openSlots", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>Has Open Slots</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sort By</span>
+                <select
+                  value={projectSortBy}
+                  onChange={(e) => handleFilterChange("sortBy", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="most_members">Most Members</option>
+                  <option value="least_members">Least Members</option>
+                </select>
+              </label>
             </div>
 
             {projectsLoading ? (
@@ -427,12 +643,12 @@ function Dashboard() {
               </div>
             ) : projects.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-700">No projects available</p>
-                <p className="mt-2 text-sm text-slate-500">Be the first to create a project!</p>
+                <p className="text-lg font-medium text-slate-700">No projects found matching your search.</p>
+                <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search terms.</p>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">
-                {projects.slice(0, 4).map((project) => (
+                {projects.map((project) => (
                   <div
                     key={project._id}
                     onClick={() => navigate(`/projects/${project._id}`)}
@@ -509,20 +725,129 @@ function Dashboard() {
           </>
         ) : activeTab === "hackathons" ? (
           <>
-            <div className="mb-10 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
+            <div className="mb-8 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900">Trending Hackathons</h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  Find the best hackathons and recruit your next team.
-                </p>
+                <p className="mt-1 text-sm text-gray-600">Find the best hackathons and recruit your next team.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateHackathonModal(true)}
-                className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                Create Hackathon
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearHackathonFilters}
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+                >
+                  Clear Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateHackathonModal(true)}
+                  className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Create Hackathon
+                </button>
+              </div>
+            </div>
+
+            {/* Hackathon Filter Bar */}
+            <div className="mb-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search hackathons</span>
+                <input
+                  value={hackathonSearch}
+                  onChange={(e) => setHackathonSearch(e.target.value)}
+                  placeholder="Search title, tech, organizer..."
+                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Difficulty</span>
+                <select
+                  value={hackathonDifficulty}
+                  onChange={(e) => handleFilterChange("difficulty", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Technology</span>
+                <select
+                  value={hackathonTechnology}
+                  onChange={(e) => handleFilterChange("technology", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>React</option>
+                  <option>Node.js</option>
+                  <option>Python</option>
+                  <option>Java</option>
+                  <option>AI/ML</option>
+                  <option>CSS</option>
+                  <option>Solidity</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Registration</span>
+                <select
+                  value={hackathonRegistrationOpen}
+                  onChange={(e) => handleFilterChange("registrationOpen", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option value="Open">Registration Open</option>
+                  <option value="Closed">Registration Closed</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Team Size</span>
+                <select
+                  value={hackathonTeamSize}
+                  onChange={(e) => handleFilterChange("teamSize", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                  <option>6</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Time Status</span>
+                <select
+                  value={hackathonTimeStatus}
+                  onChange={(e) => handleFilterChange("timeStatus", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option>All</option>
+                  <option>Upcoming</option>
+                  <option>Ongoing</option>
+                  <option>Finished</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sort By</span>
+                <select
+                  value={hackathonSortBy}
+                  onChange={(e) => handleFilterChange("sortBy", e.target.value)}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="registration_deadline">Registration Deadline</option>
+                  <option value="start_date">Start Date</option>
+                  <option value="prize">Prize Pool</option>
+                </select>
+              </label>
             </div>
 
             {hackathonsLoading ? (
@@ -531,7 +856,8 @@ function Dashboard() {
               </div>
             ) : hackathons.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <p className="text-lg font-medium text-slate-700">No hackathons available</p>
+                <p className="text-lg font-medium text-slate-700">No hackathons found matching your search.</p>
+                <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search terms.</p>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">

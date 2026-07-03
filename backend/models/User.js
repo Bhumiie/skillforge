@@ -59,6 +59,26 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: "",
     },
+
+    degree: {
+        type: String,
+        default: "",
+    },
+
+    graduationYear: {
+        type: String,
+        default: "",
+    },
+
+    portfolio: {
+        type: String,
+        default: "",
+    },
+
+    resume: {
+        type: String,
+        default: "",
+    },
 },
 {
     timestamps: true,

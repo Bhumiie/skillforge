@@ -1,4 +1,5 @@
 import Project from "../models/Project.js";
+import User from "../models/User.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -39,10 +40,78 @@ export const createProject = async (req, res) => {
 
 export const getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find()
-      .populate("owner", "name email profilePic")
-      .populate("members", "name email profilePic")
-      .sort({ createdAt: -1 });
+    const { search, technology, difficulty, openSlots, status, sortBy } = req.query;
+
+    const query = {};
+
+    // 1. Search Query
+    if (search) {
+      const users = await User.find({ name: { $regex: search, $options: "i" } }).select("_id");
+      const ownerIds = users.map(u => u._id);
+
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { technologies: { $regex: search, $options: "i" } }
+      ];
+
+      if (ownerIds.length > 0) {
+        query.$or.push({ owner: { $in: ownerIds } });
+      }
+    }
+
+    // 2. Filter Difficulty
+    if (difficulty && difficulty !== "All") {
+      query.difficulty = difficulty;
+    }
+
+    // 3. Filter Technology/Skills
+    if (technology && technology !== "All") {
+      query.technologies = { $regex: `^${technology}$`, $options: "i" };
+    }
+
+    // 4. Filter Status
+    if (status && status !== "All") {
+      query.status = status;
+    }
+
+    // 5. Filter Open Slots
+    if (openSlots === "true") {
+      query.$expr = { $lt: [{ $size: "$members" }, "$maxMembers"] };
+    }
+
+    let projects;
+    
+    // Sort logic
+    let sortObj = { createdAt: -1 }; // default newest
+    if (sortBy === "oldest") {
+      sortObj = { createdAt: 1 };
+    }
+
+    if (sortBy === "most_members" || sortBy === "least_members") {
+      const sortOrder = sortBy === "most_members" ? -1 : 1;
+      
+      const aggregatePipeline = [
+        { $match: query },
+        {
+          $addFields: {
+            membersCount: { $size: "$members" }
+          }
+        },
+        { $sort: { membersCount: sortOrder, createdAt: -1 } }
+      ];
+
+      const rawProjects = await Project.aggregate(aggregatePipeline);
+      projects = await Project.populate(rawProjects, [
+        { path: "owner", select: "name email profilePic" },
+        { path: "members", select: "name email profilePic" }
+      ]);
+    } else {
+      projects = await Project.find(query)
+        .populate("owner", "name email profilePic")
+        .populate("members", "name email profilePic")
+        .sort(sortObj);
+    }
 
     res.json({
       success: true,
