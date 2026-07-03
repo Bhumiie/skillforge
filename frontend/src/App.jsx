@@ -12,6 +12,7 @@ import Requests from "./pages/Requests";
 import Connections from "./pages/Connections";
 import Chat from "./pages/Chat";
 import ProjectDetails from "./pages/ProjectDetails";
+import HackathonDetails from "./pages/HackathonDetails";
 
 function App() {
   return (
@@ -78,6 +79,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ProjectDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hackathons/:id"
+        element={
+          <ProtectedRoute>
+            <HackathonDetails />
           </ProtectedRoute>
         }
       />

@@ -120,6 +120,47 @@ export const joinHackathon = async (req, res) => {
     hackathon.participants.push(req.user.id);
 
     await hackathon.save();
+    await hackathon.populate("owner", "name email");
+    await hackathon.populate("participants", "name email");
+
+    res.json(hackathon);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Leave Hackathon
+export const leaveHackathon = async (req, res) => {
+  try {
+    const hackathon = await Hackathon.findById(req.params.id);
+
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found" });
+    }
+
+    if (hackathon.owner.toString() === req.user.id) {
+      return res.status(400).json({
+        message: "Owner cannot leave their own hackathon. Delete it instead.",
+      });
+    }
+
+    if (
+      !hackathon.participants.some(
+        (id) => id.toString() === req.user.id
+      )
+    ) {
+      return res.status(400).json({
+        message: "You are not a participant in this hackathon",
+      });
+    }
+
+    hackathon.participants = hackathon.participants.filter(
+      (id) => id.toString() !== req.user.id
+    );
+
+    await hackathon.save();
+    await hackathon.populate("owner", "name email");
+    await hackathon.populate("participants", "name email");
 
     res.json(hackathon);
   } catch (error) {

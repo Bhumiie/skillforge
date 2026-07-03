@@ -25,6 +25,24 @@ function Dashboard() {
   });
   const [creatingProject, setCreatingProject] = useState(false);
 
+  const [showCreateHackathonModal, setShowCreateHackathonModal] = useState(false);
+  const [creatingHackathon, setCreatingHackathon] = useState(false);
+  const [createHackathonFormData, setCreateHackathonFormData] = useState({
+    title: "",
+    organizer: "",
+    description: "",
+    technologies: "",
+    difficulty: "Beginner",
+    mode: "Online",
+    location: "",
+    registrationDeadline: "",
+    startDate: "",
+    endDate: "",
+    teamSize: 4,
+    maxTeams: 100,
+    prizePool: "",
+  });
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -109,9 +127,105 @@ function Dashboard() {
     }
   };
 
+  const handleCreateHackathon = async (e) => {
+    e.preventDefault();
+    setCreatingHackathon(true);
+
+    try {
+      const payload = {
+        title: createHackathonFormData.title,
+        organizer: createHackathonFormData.organizer,
+        description: createHackathonFormData.description,
+        technologies: createHackathonFormData.technologies.split(",").map((t) => t.trim()).filter(Boolean),
+        difficulty: createHackathonFormData.difficulty,
+        mode: createHackathonFormData.mode,
+        location: createHackathonFormData.location,
+        registrationDeadline: createHackathonFormData.registrationDeadline || null,
+        startDate: createHackathonFormData.startDate || null,
+        endDate: createHackathonFormData.endDate || null,
+        teamSize: parseInt(createHackathonFormData.teamSize),
+        maxTeams: parseInt(createHackathonFormData.maxTeams),
+        prizePool: createHackathonFormData.prizePool,
+      };
+
+      await api.post("/hackathons", payload);
+
+      setShowCreateHackathonModal(false);
+      setCreateHackathonFormData({
+        title: "",
+        organizer: "",
+        description: "",
+        technologies: "",
+        difficulty: "Beginner",
+        mode: "Online",
+        location: "",
+        registrationDeadline: "",
+        startDate: "",
+        endDate: "",
+        teamSize: 4,
+        maxTeams: 100,
+        prizePool: "",
+      });
+
+      const response = await api.get("/hackathons");
+      setHackathons(response.data || []);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to create hackathon");
+    } finally {
+      setCreatingHackathon(false);
+    }
+  };
+
+  const handleJoinHackathon = async (hackathonId) => {
+    try {
+      await api.post(`/hackathons/${hackathonId}/join`, {});
+      alert("Successfully joined the hackathon!");
+      const response = await api.get("/hackathons");
+      setHackathons(response.data || []);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to join hackathon");
+    }
+  };
+
+  const handleLeaveHackathon = async (hackathonId) => {
+    if (!window.confirm("Are you sure you want to leave this hackathon?")) return;
+    try {
+      await api.post(`/hackathons/${hackathonId}/leave`, {});
+      alert("Successfully left the hackathon!");
+      const response = await api.get("/hackathons");
+      setHackathons(response.data || []);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to leave hackathon");
+    }
+  };
+
+  // eslint-disable-next-line no-unused-vars
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleJoinProject = async (projectId) => {
+    try {
+      await api.post(`/projects/${projectId}/join`, {});
+      alert("Successfully joined the project!");
+      const response = await api.get("/projects");
+      setProjects(response.data.projects || []);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to join project");
+    }
+  };
+
+  const handleLeaveProject = async (projectId) => {
+    if (!window.confirm("Are you sure you want to leave this project?")) return;
+    try {
+      await api.post(`/projects/${projectId}/leave`, {});
+      alert("Successfully left the project!");
+      const response = await api.get("/projects");
+      setProjects(response.data.projects || []);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to leave project");
+    }
   };
 
   const handleConnect = async (userId) => {
@@ -321,7 +435,8 @@ function Dashboard() {
                 {projects.slice(0, 4).map((project) => (
                   <div
                     key={project._id}
-                    className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.12)]"
+                    onClick={() => navigate(`/projects/${project._id}`)}
+                    className="cursor-pointer rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.12)]"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -343,13 +458,49 @@ function Dashboard() {
 
                     <div className="mt-6 flex items-center justify-between gap-4 text-sm text-slate-600">
                       <span>{project.members.length}/{project.maxMembers} members</span>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/projects/${project._id}`)}
-                        className="text-sm font-semibold text-blue-600 transition hover:text-blue-800"
-                      >
-                        View →
-                      </button>
+                      <div>
+                        {project.owner?._id === user?._id || project.owner === user?._id ? (
+                          <button
+                            type="button"
+                            disabled
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                          >
+                            Owner
+                          </button>
+                        ) : project.members?.some(m => m._id === user?._id || m === user?._id) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLeaveProject(project._id);
+                            }}
+                            className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                          >
+                            Leave Project
+                          </button>
+                        ) : project.status !== "Open" || project.members?.length >= project.maxMembers ? (
+                          <button
+                            type="button"
+                            disabled
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
+                          >
+                            Project Full
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJoinProject(project._id);
+                            }}
+                            className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                          >
+                            Join Project
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -367,9 +518,10 @@ function Dashboard() {
               </div>
               <button
                 type="button"
+                onClick={() => setShowCreateHackathonModal(true)}
                 className="inline-flex items-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
-                Find Team
+                Create Hackathon
               </button>
             </div>
 
@@ -383,48 +535,105 @@ function Dashboard() {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">
-                {hackathons.map((hackathon) => (
-                  <div
-                    key={hackathon._id}
-                    className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.12)]"
-                  >
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900">{hackathon.title}</h3>
-                          <p className="mt-2 text-sm text-gray-600">{hackathon.organizer}</p>
-                        </div>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
-                          {hackathon.mode}
-                        </span>
-                      </div>
+                {hackathons.map((hackathon) => {
+                  const isRegClosed = hackathon.status === "Closed" || (hackathon.registrationDeadline && new Date() > new Date(hackathon.registrationDeadline));
+                  const isHackathonFull = hackathon.participants?.length >= (hackathon.maxTeams * hackathon.teamSize);
+                  const isUserParticipant = hackathon.participants?.some(m => m === user?._id || m._id === user?._id);
+                  const isUserOwner = hackathon.owner?._id === user?._id || hackathon.owner === user?._id;
 
-                      <div className="flex flex-wrap gap-2">
-                        {hackathon.technologies.map((tech) => (
-                          <span key={tech} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                            {tech}
+                  return (
+                    <div
+                      key={hackathon._id}
+                      onClick={() => navigate(`/hackathons/${hackathon._id}`)}
+                      className="cursor-pointer rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.12)]"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900">{hackathon.title}</h3>
+                            <p className="mt-2 text-sm text-gray-600">{hackathon.organizer}</p>
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
+                            {hackathon.mode}
                           </span>
-                        ))}
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                          Registration: {hackathon.registrationDeadline}
                         </div>
-                        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                          Team size: {hackathon.teamSize}
-                        </div>
-                      </div>
 
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Join a strong team fast</span>
-                        <button type="button" className="text-sm font-semibold text-blue-600 transition hover:text-blue-800">
-                          View →
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {hackathon.technologies.map((tech) => (
+                            <span key={tech} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            Registration: {hackathon.registrationDeadline ? new Date(hackathon.registrationDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}
+                          </div>
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            Team size: {hackathon.teamSize}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-4 text-sm text-slate-600">
+                          <span>{hackathon.participants?.length || 0} Joined</span>
+                          <div>
+                            {isUserOwner ? (
+                              <button
+                                type="button"
+                                disabled
+                                onClick={(e) => e.stopPropagation()}
+                                className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                              >
+                                Owner
+                              </button>
+                            ) : isUserParticipant ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLeaveHackathon(hackathon._id);
+                                }}
+                                className="rounded-full bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                              >
+                                Leave Hackathon
+                              </button>
+                            ) : isRegClosed ? (
+                              <button
+                                type="button"
+                                disabled
+                                onClick={(e) => e.stopPropagation()}
+                                className="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
+                              >
+                                Registration Closed
+                              </button>
+                            ) : isHackathonFull ? (
+                              <button
+                                type="button"
+                                disabled
+                                onClick={(e) => e.stopPropagation()}
+                                className="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
+                              >
+                                Full
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinHackathon(hackathon._id);
+                                }}
+                                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                              >
+                                Join Hackathon
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -519,6 +728,191 @@ function Dashboard() {
                   className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {creatingProject ? "Creating..." : "Create Project"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showCreateHackathonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900">Create New Hackathon</h2>
+            <p className="mt-2 text-sm text-gray-600">Host or list a hackathon to recruit developers.</p>
+
+            <form onSubmit={handleCreateHackathon} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Title</label>
+                <input
+                  type="text"
+                  value={createHackathonFormData.title}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, title: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="e.g. HackMIT"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Organizer</label>
+                <input
+                  type="text"
+                  value={createHackathonFormData.organizer}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, organizer: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="e.g. MIT CS Department"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Description</label>
+                <textarea
+                  value={createHackathonFormData.description}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, description: e.target.value })}
+                  rows="3"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="Provide hackathon rules, goals, and description"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Technologies (comma-separated)</label>
+                <input
+                  type="text"
+                  value={createHackathonFormData.technologies}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, technologies: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="e.g. React, Python, Solidity"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Difficulty</label>
+                  <select
+                    value={createHackathonFormData.difficulty}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, difficulty: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option>Beginner</option>
+                    <option>Intermediate</option>
+                    <option>Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Mode</label>
+                  <select
+                    value={createHackathonFormData.mode}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, mode: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option>Online</option>
+                    <option>Offline</option>
+                    <option>Hybrid</option>
+                  </select>
+                </div>
+              </div>
+
+              {createHackathonFormData.mode !== "Online" && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Location</label>
+                  <input
+                    type="text"
+                    value={createHackathonFormData.location}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, location: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    placeholder="e.g. Building 10, MIT Campus"
+                  />
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Team Size</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={createHackathonFormData.teamSize}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, teamSize: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Max Teams</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={createHackathonFormData.maxTeams}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, maxTeams: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Prize Pool</label>
+                <input
+                  type="text"
+                  value={createHackathonFormData.prizePool}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, prizePool: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="e.g. $5,000 Cash + Goodies"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Registration Deadline</label>
+                <input
+                  type="date"
+                  value={createHackathonFormData.registrationDeadline}
+                  onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, registrationDeadline: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Start Date</label>
+                  <input
+                    type="date"
+                    value={createHackathonFormData.startDate}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, startDate: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">End Date</label>
+                  <input
+                    type="date"
+                    value={createHackathonFormData.endDate}
+                    onChange={(e) => setCreateHackathonFormData({ ...createHackathonFormData, endDate: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateHackathonModal(false)}
+                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingHackathon}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {creatingHackathon ? "Creating..." : "Create Hackathon"}
                 </button>
               </div>
             </form>

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 function Projects() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("All");
   const [technology, setTechnology] = useState("All");
@@ -63,6 +65,23 @@ function Projects() {
       setTimeout(() => setJoinMessage(""), 3000);
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleLeave = async (projectId) => {
+    if (!window.confirm("Are you sure you want to leave this project?")) return;
+
+    try {
+      await api.post(`/projects/${projectId}/leave`, {});
+      setJoinMessage("Successfully left the project!");
+      setTimeout(() => setJoinMessage(""), 3000);
+
+      const response = await api.get("/projects");
+      setProjects(response.data.projects || []);
+    } catch (err) {
+      const message = err?.response?.data?.message || "Failed to leave project";
+      setJoinMessage(message);
+      setTimeout(() => setJoinMessage(""), 3000);
     }
   };
 
@@ -131,7 +150,8 @@ function Projects() {
             {filteredProjects.map((project) => (
               <div
                 key={project._id}
-                className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_14px_35px_rgba(15,23,42,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.14)]"
+                onClick={() => navigate(`/projects/${project._id}`)}
+                className="cursor-pointer rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_14px_35px_rgba(15,23,42,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(79,70,229,0.14)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -158,26 +178,49 @@ function Projects() {
                   <p className="text-sm text-slate-500">
                     Members: <span className="font-semibold text-slate-900">{project.members.length}/{project.maxMembers}</span>
                   </p>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/projects/${project._id}`)}
-                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      View Details
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleJoin(project._id)}
-                      disabled={joiningId === project._id || project.status !== "Open"}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold text-white transition ${
-                        joiningId === project._id || project.status !== "Open"
-                          ? "bg-slate-400 cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-700"
-                      }`}
-                    >
-                      {joiningId === project._id ? "Joining..." : project.status === "Open" ? "Join Project" : project.status}
-                    </button>
+                  <div>
+                    {project.owner?._id === user?._id || project.owner === user?._id ? (
+                      <button
+                        type="button"
+                        disabled
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-full bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                      >
+                        Owner
+                      </button>
+                    ) : project.members?.some(m => m._id === user?._id || m === user?._id) ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeave(project._id);
+                        }}
+                        className="rounded-full bg-rose-50 border border-rose-200 px-5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                      >
+                        Leave Project
+                      </button>
+                    ) : project.status !== "Open" || project.members?.length >= project.maxMembers ? (
+                      <button
+                        type="button"
+                        disabled
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-full bg-slate-200 px-5 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
+                      >
+                        Project Full
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleJoin(project._id);
+                        }}
+                        disabled={joiningId === project._id}
+                        className="rounded-full bg-blue-600 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                      >
+                        {joiningId === project._id ? "Joining..." : "Join Project"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

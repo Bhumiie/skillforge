@@ -6,6 +6,7 @@ import {
   updateHackathon,
   deleteHackathon,
   joinHackathon,
+  leaveHackathon,
 } from "../controllers/hackathonController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -20,5 +21,6 @@ router.post("/", authMiddleware, createHackathon);
 router.put("/:id", authMiddleware, updateHackathon);
 router.delete("/:id", authMiddleware, deleteHackathon);
 router.post("/:id/join", authMiddleware, joinHackathon);
+router.post("/:id/leave", authMiddleware, leaveHackathon);
 
 export default router;
