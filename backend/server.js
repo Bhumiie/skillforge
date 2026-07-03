@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import morgan from "morgan";
 import "./config/env.js";
 import connectDB from "./config/db.js";
 import routes from "./routes/index.js";
@@ -17,12 +18,19 @@ import { mongoSanitize } from "./middleware/mongoSanitize.js";
 import sanitizeInput from "./middleware/sanitizeInput.js";
 import { authLimiter, chatLimiter, uploadLimiter } from "./middleware/rateLimiter.js";
 
+// Logger import
+import logger from "./config/logger.js";
+
 const app = express();
 
 const PORT = process.env.PORT || 5000;
 
 // Apply Helmet custom secure headers
 app.use(helmetCustom);
+
+// Mount Morgan logger stream mapped to Winston
+const isProduction = process.env.NODE_ENV === "production";
+app.use(morgan(isProduction ? "combined" : "dev", { stream: logger.stream }));
 
 // Parse incoming JSON request bodies
 app.use(express.json());
@@ -51,8 +59,8 @@ app.use("/api/notifications", notificationRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
-  const isProduction = process.env.NODE_ENV === "production";
+  logger.error(err);
+  
   res.status(err.statusCode || 500).json({
     success: false,
     message: isProduction ? "An internal server error occurred. Please try again later." : err.message,
@@ -65,10 +73,10 @@ const startServer = async () => {
     await connectDB();
 
     app.listen(PORT, () => {
-      console.log(`SkillForge server running on port ${PORT}`);
+      logger.info(`SkillForge server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error("Failed to start server: " + error.message);
   }
 };
 
