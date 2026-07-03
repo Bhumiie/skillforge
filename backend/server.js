@@ -21,8 +21,7 @@ app.use(express.json());
 // Allow requests from the frontend
 app.use(cors());
 
-// Serve uploads folder statically
-app.use("/uploads", express.static("uploads"));
+
 
 // Mount all routes
 app.use("/", routes);

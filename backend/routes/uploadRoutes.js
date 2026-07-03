@@ -1,21 +1,25 @@
 import express from "express";
 import upload from "../middleware/uploadMiddleware.js";
 import protect from "../middleware/authMiddleware.js";
+import { uploadBufferToCloudinary } from "../utils/cloudinaryHelper.js";
 
 const router = express.Router();
 
-router.post("/", protect, upload.single("file"), (req, res) => {
+router.post("/", protect, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    // construct static file URL
-    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const result = await uploadBufferToCloudinary(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
 
     res.json({
       success: true,
-      fileUrl,
+      fileUrl: result.secure_url,
       fileName: req.file.originalname,
     });
   } catch (error) {
