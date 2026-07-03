@@ -63,7 +63,7 @@ function Signup() {
       </div>
 
       {/* Card */}
-      <div className="relative w-full max-w-md rounded-3xl bg-white/80 backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(37,99,235,0.15)] p-8">
+      <div className="relative w-full max-w-md rounded-3xl bg-white/80 backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(37,99,235,0.15)] p-6 sm:p-8">
 
         <h1 className="text-3xl font-bold text-gray-900 text-center">
           Join SkillForge

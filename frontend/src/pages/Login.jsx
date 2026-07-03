@@ -68,7 +68,7 @@ function Login() {
       </div>
 
       {/* Card */}
-      <div className="relative w-full max-w-md rounded-3xl bg-white/78 backdrop-blur-xl border border-violet-200/70 shadow-[0_20px_60px_rgba(109,40,217,0.14),0_8px_24px_rgba(79,70,229,0.07)] p-8">
+      <div className="relative w-full max-w-md rounded-3xl bg-white/78 backdrop-blur-xl border border-violet-200/70 shadow-[0_20px_60px_rgba(109,40,217,0.14),0_8px_24px_rgba(79,70,229,0.07)] p-6 sm:p-8">
 
         <h1 className="text-3xl font-bold text-gray-900 text-center">
           Welcome Back

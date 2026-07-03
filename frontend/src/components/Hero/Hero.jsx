@@ -53,8 +53,8 @@ function Hero() {
       
           {/* Right */}
 
-            <div className="flex justify-center">
-            <div className="w-[450px] bg-white rounded-3xl shadow-xl p-8">
+          <div className="flex justify-center w-full">
+            <div className="w-full max-w-[450px] bg-white rounded-3xl shadow-xl p-6 sm:p-8">
 
             <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold">

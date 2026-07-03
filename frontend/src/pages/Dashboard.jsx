@@ -472,16 +472,16 @@ function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#eef4ff] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#eef4ff]">
       <TopNavbar />
-      <div className="mx-auto max-w-[1400px]">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-4 px-4 sm:px-0">
           <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name || "Bhumika"}.</h1>
           <p className="mt-1 text-sm text-gray-600">Build • Learn • Collaborate</p>
         </div>
 
         <div className="mb-4 border-b border-slate-200">
-          <div className="flex flex-wrap gap-12 px-4 pb-3 text-sm font-medium text-slate-600 sm:px-0">
+          <div className="flex flex-wrap gap-6 sm:gap-12 px-4 pb-3 text-sm font-medium text-slate-600 sm:px-0">
             {[
               { key: "students", label: "Students" },
               { key: "projects", label: "Projects" },
@@ -763,7 +763,7 @@ function Dashboard() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900">{project.title}</h3>
-                        <p className="mt-3 text-sm text-gray-600">{project.description}</p>
+                        <p className="mt-3 text-sm text-gray-600 line-clamp-2">{project.description}</p>
                       </div>
                       <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
                         {project.difficulty}
@@ -1085,8 +1085,8 @@ function Dashboard() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 overflow-y-auto">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-gray-900">Create New Project</h2>
             <p className="mt-2 text-sm text-gray-600">Share your project idea and find collaborators.</p>
 
@@ -1176,8 +1176,8 @@ function Dashboard() {
       )}
 
       {showCreateHackathonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 overflow-y-auto">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-gray-900">Create New Hackathon</h2>
             <p className="mt-2 text-sm text-gray-600">Host or list a hackathon to recruit developers.</p>
 

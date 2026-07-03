@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate, Link } from "react-router-dom";
-import { FiBell, FiUser } from "react-icons/fi";
+import { FiBell, FiUser, FiMenu, FiX } from "react-icons/fi";
 import api from "../../api/api";
 
 function TopNavbar() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isLoggedIn = !!localStorage.getItem("token");
 
   useEffect(() => {
@@ -46,23 +47,23 @@ function TopNavbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm shadow-slate-200 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+      <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 md:px-6">
         <Link to="/" className="flex items-center gap-0 text-xl font-extrabold tracking-tight text-slate-900">
           <span className="text-blue-600">Skill</span><span className="text-violet-600">Forge</span>
         </Link>
 
         {isLoggedIn ? (
           <>
-            <nav className="flex flex-wrap items-center justify-center gap-3">
+            <nav className="hidden md:flex items-center justify-center gap-3">
               {renderLink("/dashboard", "Dashboard")}
               {renderLink("/connections", "Connections")}
             </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => navigate("/notifications")}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md cursor-pointer"
                 aria-label="Notifications"
               >
                 <FiBell className="h-5 w-5" />
@@ -76,30 +77,87 @@ function TopNavbar() {
               <button
                 type="button"
                 onClick={() => navigate("/profile")}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
+                className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md cursor-pointer"
                 aria-label="Profile"
               >
                 <FiUser className="h-5 w-5" />
               </button>
+
+              {/* Hamburger Menu Toggle (Mobile) */}
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="inline-flex md:hidden h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md cursor-pointer"
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              >
+                {isMenuOpen ? <FiX className="h-5 w-5" /> : <FiMenu className="h-5 w-5" />}
+              </button>
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               to="/login"
-              className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition"
+              className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-blue-600 transition"
             >
               Login
             </Link>
             <Link
               to="/signup"
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+              className="bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition"
             >
               Sign Up
             </Link>
           </div>
         )}
       </div>
+
+      {/* Mobile Collapsible Navigation Menu */}
+      {isLoggedIn && isMenuOpen && (
+        <div className="border-t border-slate-100 bg-white px-4 py-3 md:hidden">
+          <nav className="flex flex-col gap-2">
+            <NavLink
+              to="/dashboard"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `block rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+                }`
+              }
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/connections"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `block rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+                }`
+              }
+            >
+              Connections
+            </NavLink>
+            <NavLink
+              to="/profile"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `block rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+                }`
+              }
+            >
+              Profile
+            </NavLink>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

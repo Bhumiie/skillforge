@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function Projects() {
   const navigate = useNavigate();
@@ -151,8 +152,9 @@ function Projects() {
   );
 
   return (
-    <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-[#eef4ff] pb-12">
+      <TopNavbar />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-10 rounded-[32px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -291,7 +293,7 @@ function Projects() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-semibold text-slate-900">{project.title}</h2>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{project.description}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-2">{project.description}</p>
                   </div>
                   <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
                     {project.difficulty}

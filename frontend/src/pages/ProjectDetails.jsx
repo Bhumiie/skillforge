@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import TopNavbar from "../components/TopNavbar/TopNavbar";
 
 function ProjectDetails() {
   const { id } = useParams();
@@ -120,17 +121,20 @@ function ProjectDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8 animate-pulse">
-        <div className="mx-auto max-w-5xl rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <div className="space-y-4">
-            <div className="h-8 w-1/3 rounded bg-slate-200" />
-            <div className="h-4 w-full rounded bg-slate-200" />
-            <div className="h-4 w-5/6 rounded bg-slate-200" />
-            <div className="h-4 w-1/2 rounded bg-slate-200" />
-          </div>
-          <div className="mt-8 flex gap-3">
-            <div className="h-10 w-28 rounded-full bg-slate-200" />
-            <div className="h-10 w-28 rounded-full bg-slate-200" />
+      <div className="min-h-screen bg-[#eef4ff] pb-12 animate-pulse">
+        <TopNavbar />
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-10 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <div className="space-y-4">
+              <div className="h-8 w-1/3 rounded bg-slate-200" />
+              <div className="h-4 w-full rounded bg-slate-200" />
+              <div className="h-4 w-5/6 rounded bg-slate-200" />
+              <div className="h-4 w-1/2 rounded bg-slate-200" />
+            </div>
+            <div className="mt-8 flex gap-3">
+              <div className="h-10 w-28 rounded-full bg-slate-200" />
+              <div className="h-10 w-28 rounded-full bg-slate-200" />
+            </div>
           </div>
         </div>
       </div>
@@ -139,16 +143,19 @@ function ProjectDetails() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <h2 className="text-2xl font-semibold text-gray-900">Project not found</h2>
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="mt-6 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2.5 font-medium text-white transition hover:scale-[1.02]"
-          >
-            Back to Dashboard
-          </button>
+      <div className="min-h-screen bg-[#eef4ff] pb-12">
+        <TopNavbar />
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <h2 className="text-2xl font-semibold text-gray-900">Project not found</h2>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="mt-6 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2.5 font-medium text-white transition hover:scale-[1.02]"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -158,8 +165,10 @@ function ProjectDetails() {
   const isMember = project.members?.some((member) => member._id === user?._id);
 
   return (
-    <div className="min-h-screen bg-[#eef4ff] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-8 lg:p-10">
+    <div className="min-h-screen bg-[#eef4ff] pb-12">
+      <TopNavbar />
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-8 lg:p-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -332,8 +341,8 @@ function ProjectDetails() {
       </div>
 
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 overflow-y-auto">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-gray-900">Edit Project Details</h2>
             <p className="mt-2 text-sm text-gray-600">Update your project specifications.</p>
 
@@ -442,6 +451,7 @@ function ProjectDetails() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

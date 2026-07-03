@@ -73,9 +73,9 @@ function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-8">
+      <div className="min-h-screen bg-[#eef4ff] pb-12">
         <TopNavbar />
-        <div className="mx-auto mt-10 max-w-7xl px-4 text-center">
+        <div className="mx-auto mt-10 max-w-7xl px-4 py-8 text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
           <p className="mt-4 text-lg font-medium text-slate-600">Loading developer profile...</p>
         </div>
@@ -85,18 +85,20 @@ function UserProfile() {
 
   if (error || !profileData) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-8">
+      <div className="min-h-screen bg-[#eef4ff] pb-12">
         <TopNavbar />
-        <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-lg">
-          <h2 className="text-xl font-bold text-red-800">Profile Not Found</h2>
-          <p className="mt-2 text-slate-600">{error || "The developer profile you are trying to view does not exist."}</p>
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="mt-6 rounded-full bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700"
-          >
-            Back to Dashboard
-          </button>
+        <div className="mx-auto mt-10 max-w-xl px-4 py-8">
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-lg">
+            <h2 className="text-xl font-bold text-red-800">Profile Not Found</h2>
+            <p className="mt-2 text-slate-600">{error || "The developer profile you are trying to view does not exist."}</p>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="mt-6 rounded-full bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

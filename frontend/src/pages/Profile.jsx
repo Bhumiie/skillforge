@@ -188,18 +188,20 @@ function Profile() {
 
   if (error || !profileData) {
     return (
-      <div className="min-h-screen bg-[#eef4ff] px-4 py-8">
+      <div className="min-h-screen bg-[#eef4ff] pb-12">
         <TopNavbar />
-        <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-lg">
-          <h2 className="text-xl font-bold text-red-800">Something went wrong</h2>
-          <p className="mt-2 text-slate-600">{error || "Failed to load developer profile details."}</p>
-          <button
-            type="button"
-            onClick={fetchProfileDetails}
-            className="mt-6 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white transition hover:bg-red-700"
-          >
-            Try Again
-          </button>
+        <div className="mx-auto mt-10 max-w-xl px-4 py-8">
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-lg">
+            <h2 className="text-xl font-bold text-red-800">Something went wrong</h2>
+            <p className="mt-2 text-slate-600">{error || "Failed to load developer profile details."}</p>
+            <button
+              type="button"
+              onClick={fetchProfileDetails}
+              className="mt-6 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white transition hover:bg-red-700"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
