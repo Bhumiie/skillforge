@@ -1,15 +1,13 @@
-import TopNavbar from "../components/TopNavbar/TopNavbar";
+import Navbar from "../components/Navbar/Navbar";
 import Hero from "../components/Hero/Hero";
 import Features from "../components/Features/Features";
-import Footer from "../components/Footer/Footer";
 
 function Home() {
   return (
     <>
-      <TopNavbar />
+      <Navbar />
       <Hero />
       <Features />
-      <Footer />
     </>
   );
 }
