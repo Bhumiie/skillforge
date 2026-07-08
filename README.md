@@ -196,6 +196,26 @@ Communicate directly with connections and collaborators through the platform.
 
 ---
 
+## Screenshots
+
+### Landing Page
+
+![SkillForge Landing Page](screenshots/landingpage.png)
+
+### Student Dashboard
+
+![SkillForge Student Dashboard](screenshots/dashboard.png)
+
+### Hackathons
+
+![SkillForge Hackathons](screenshots/hackathonpage.png)
+
+### User Profile
+
+![SkillForge User Profile](screenshots/profilepage.png)
+
+---
+
 ## Installation and Local Setup
 
 ### 1. Clone the Repository
